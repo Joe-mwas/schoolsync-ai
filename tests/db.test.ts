@@ -32,3 +32,19 @@ test("seeds on first read and serializes concurrent mutations", async () => {
   await mutateDb((d) => void d.events.pop());
   assert.equal((await readDb()).events.length, before + 24);
 });
+
+test("production first run creates only the configured director", async () => {
+  const { initialDatabase } = await import("../src/lib/seed.ts");
+  const { verifyPassword } = await import("../src/lib/password.ts");
+  assert.throws(() => initialDatabase({ NODE_ENV: "production" }), /ADMIN_EMAIL/);
+  assert.throws(() => initialDatabase({ NODE_ENV: "production", ADMIN_EMAIL: "a@b.c", ADMIN_PASSWORD: "short" }), /ADMIN_EMAIL/);
+
+  const db = initialDatabase({ NODE_ENV: "production", ADMIN_EMAIL: " Head@School.org ", ADMIN_PASSWORD: "long-enough-pw" });
+  assert.equal(db.users.length, 1);
+  assert.equal(db.users[0].email, "head@school.org");
+  assert.equal(db.users[0].role, "director");
+  assert.ok(verifyPassword("long-enough-pw", db.users[0].passwordHash));
+  assert.equal(db.announcements.length, 0);
+
+  assert.ok(initialDatabase({ NODE_ENV: "production", SEED_DEMO: "1" }).users.length > 1);
+});

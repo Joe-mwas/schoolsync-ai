@@ -13,11 +13,22 @@ async function post(url: string, body: unknown): Promise<string | null> {
   return res.ok ? null : (await res.json().catch(() => ({}))).error ?? "Request failed";
 }
 
-export default function SchoolForms({ classes, students }: { classes: Option[]; students: Option[] }) {
+export default function SchoolForms({ classes, students, teachers }: { classes: Option[]; students: Option[]; teachers: Option[] }) {
   const router = useRouter();
   const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "" });
   const [event, setEvent] = useState({ title: "", date: "", description: "" });
-  const [msg, setMsg] = useState<{ person?: string; event?: string }>({});
+  const [cls, setCls] = useState({ name: "", teacherId: "" });
+  const [msg, setMsg] = useState<{ person?: string; event?: string; cls?: string }>({});
+
+  async function addClass(e: React.FormEvent) {
+    e.preventDefault();
+    const err = await post("/api/classes", cls);
+    setMsg({ cls: err ?? `Added ${cls.name}` });
+    if (!err) {
+      setCls({ name: "", teacherId: "" });
+      router.refresh();
+    }
+  }
 
   async function addPerson(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +91,20 @@ export default function SchoolForms({ classes, students }: { classes: Option[]; 
         </div>
         {msg.person && <div className="small">{msg.person}</div>}
         <div><button type="submit">Add person</button></div>
+      </form>
+
+      <form className="card stack" onSubmit={addClass}>
+        <h2>Add a class</h2>
+        <label>Class name<input value={cls.name} onChange={(e) => setCls({ ...cls, name: e.target.value })} placeholder="e.g. Grade 6 North" required /></label>
+        <label>
+          Class teacher
+          <select value={cls.teacherId} onChange={(e) => setCls({ ...cls, teacherId: e.target.value })}>
+            <option value="">Assign later</option>
+            {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </label>
+        {msg.cls && <div className="small">{msg.cls}</div>}
+        <div><button type="submit">Add class</button></div>
       </form>
 
       <form className="card stack" onSubmit={addEvent}>
