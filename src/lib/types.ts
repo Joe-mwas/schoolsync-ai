@@ -71,10 +71,14 @@ export interface WhatsAppMessage {
   phone: string;
   userId: string | null;
   body: string;
-  status: "sent" | "simulated" | "failed" | "received";
+  status: "sent" | "delivered" | "read" | "simulated" | "failed" | "received";
   error: string | null;
   announcementId: string | null;
   createdAt: string;
+  /** How an outbound message was sent: free text or an approved template. */
+  kind?: "text" | "template";
+  /** Meta's message id (wamid), used to match delivery receipts. */
+  providerMessageId?: string | null;
 }
 
 export interface Database {

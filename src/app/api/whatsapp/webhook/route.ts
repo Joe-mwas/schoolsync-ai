@@ -1,6 +1,6 @@
 import { after } from "next/server";
-import { handleInboundMessage } from "@/lib/inbound";
-import { parseIncomingMessages, verifyWebhookSignature } from "@/lib/whatsapp";
+import { handleInboundMessage, handleStatusUpdates } from "@/lib/inbound";
+import { parseIncomingMessages, parseStatusUpdates, verifyWebhookSignature } from "@/lib/whatsapp";
 
 /** Meta's webhook verification handshake. */
 export async function GET(req: Request) {
@@ -34,7 +34,9 @@ export async function POST(req: Request) {
 
   // Acknowledge immediately; Meta retries webhooks that respond slowly.
   const messages = parseIncomingMessages(payload);
+  const statuses = parseStatusUpdates(payload);
   after(async () => {
+    await handleStatusUpdates(statuses).catch((err) => console.error("status update failed", err));
     for (const m of messages) {
       await handleInboundMessage(m.from, m.body).catch((err) => console.error("inbound failed", err));
     }

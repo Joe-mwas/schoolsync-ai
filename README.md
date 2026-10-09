@@ -49,6 +49,7 @@ All settings are environment variables (see `.env.example`):
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | For live WhatsApp | Without them the app runs in **simulation mode**: messages are logged on the WhatsApp page but not sent. |
 | `WHATSAPP_VERIFY_TOKEN` | For the webhook | Token Meta sends during webhook verification. |
 | `WHATSAPP_APP_SECRET` | For the webhook in production | Verifies `X-Hub-Signature-256` on incoming webhooks. Required in production. |
+| `WHATSAPP_TEMPLATE_NAME`, `WHATSAPP_TEMPLATE_LANGUAGE` | For reaching every parent | Approved template used for announcements to people outside the 24-hour window (language defaults to `en`). |
 | `DATA_FILE` | No | Path of the JSON datastore (default `data/db.json`). |
 | `SHOW_DEMO_ACCOUNTS` | No | Set to `1` to show demo-login buttons in production. |
 
@@ -58,7 +59,23 @@ All settings are environment variables (see `.env.example`):
 2. Set the webhook URL to `https://<your-host>/api/whatsapp/webhook`, use your `WHATSAPP_VERIFY_TOKEN`, and subscribe to the `messages` field.
 3. Add each parent's and teacher's phone number in **School Admin** (international format, e.g. `+254700000001`).
 
-Meta only delivers free-form text inside the 24-hour customer-service window (i.e. after the recipient has messaged you). For cold broadcasts to parents you need an approved [message template](https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates); `src/lib/whatsapp.ts` is where to add one.
+#### Announcement template
+
+Meta only delivers free-form text inside the 24-hour customer-service window, i.e. to people who messaged the school in the last 24 hours. For everyone else, announcements are sent with an approved [message template](https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates):
+
+1. In WhatsApp Manager, create a **Utility** template named `school_announcement` (English) whose body uses exactly two variables, `{{1}}` for the title and `{{2}}` for the message, for example:
+   ```
+   📢 {{1}}
+
+   {{2}}
+
+   Reply to this message if you have any questions.
+   ```
+2. Once Meta approves it, set `WHATSAPP_TEMPLATE_NAME=school_announcement` (and `WHATSAPP_TEMPLATE_LANGUAGE` if not `en`).
+
+Each broadcast then picks per recipient: free text if they're inside the window, the template otherwise. Line breaks in the message are shown as ` · ` inside the template, because Meta doesn't allow them in variables. Meta may re-categorise the template as Marketing, which changes its price but not how it works.
+
+Subscribe the webhook to `messages` to also receive delivery receipts: the WhatsApp page then shows each message as delivered, read or failed, with Meta's error for failures.
 
 ## AI details
 
