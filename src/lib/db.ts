@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { seedDatabase } from "./seed.ts";
+import { initialDatabase } from "./seed.ts";
 import type { Database } from "./types.ts";
 
 /**
@@ -27,7 +27,7 @@ async function load(): Promise<Database> {
     store.db = JSON.parse(await readFile(dataFile(), "utf8")) as Database;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-    store.db = seedDatabase();
+    store.db = initialDatabase();
     await persist(store.db);
   }
   return store.db;

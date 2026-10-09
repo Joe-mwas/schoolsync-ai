@@ -4,6 +4,44 @@ import type { Database } from "./types.ts";
 /** Password shared by every demo account. */
 export const DEMO_PASSWORD = "schoolsync";
 
+/**
+ * An empty school with a single director account, used for real deployments
+ * so no account ships with a publicly known password.
+ */
+export function seedProductionDatabase(admin: { name: string; email: string; password: string }): Database {
+  return {
+    users: [
+      {
+        id: "u-director",
+        name: admin.name,
+        email: admin.email.trim().toLowerCase(),
+        role: "director",
+        passwordHash: hashPassword(admin.password),
+        classIds: [],
+        childIds: [],
+      },
+    ],
+    classes: [],
+    announcements: [],
+    events: [],
+    posters: [],
+    whatsappMessages: [],
+  };
+}
+
+/** Demo data is used in development, or in production when SEED_DEMO=1. */
+export function initialDatabase(env: NodeJS.ProcessEnv = process.env): Database {
+  if (env.NODE_ENV !== "production" || env.SEED_DEMO === "1") return seedDatabase();
+  const email = env.ADMIN_EMAIL?.trim();
+  const password = env.ADMIN_PASSWORD;
+  if (!email || !password || password.length < 8) {
+    throw new Error(
+      "First production start needs ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters) to create the director account, or SEED_DEMO=1 for demo data.",
+    );
+  }
+  return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "School Director", email, password });
+}
+
 export function seedDatabase(): Database {
   const pw = hashPassword(DEMO_PASSWORD);
   const now = Date.now();

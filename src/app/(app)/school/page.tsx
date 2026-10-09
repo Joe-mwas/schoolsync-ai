@@ -16,14 +16,34 @@ export default async function SchoolPage() {
       <div className="page-header">
         <div>
           <h1>School Admin</h1>
-          <p>Manage people and the school calendar.</p>
+          <p>Manage classes, people and the school calendar. Add classes and teachers first, then students, then parents.</p>
         </div>
       </div>
 
       <SchoolForms
         classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}
         students={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: u.name }))}
+        teachers={db.users.filter((u) => u.role === "teacher").map((u) => ({ id: u.id, name: u.name }))}
       />
+
+      <div className="card">
+        <h2>Classes</h2>
+        {db.classes.length === 0 ? (
+          <p className="muted">No classes yet.</p>
+        ) : (
+          <ul className="list">
+            {db.classes.map((c) => (
+              <li key={c.id}>
+                <strong>{c.name}</strong>
+                <div className="small muted">
+                  Teacher: {c.teacherId ? names.get(c.teacherId) : "Unassigned"} ·{" "}
+                  {db.users.filter((u) => u.role === "student" && u.classIds.includes(c.id)).length} student(s)
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="card">
         <h2>Events</h2>

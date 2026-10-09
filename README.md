@@ -43,6 +43,7 @@ All settings are environment variables (see `.env.example`):
 
 | Variable | Required | Purpose |
 |---|---|---|
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | First production start | Creates the director account. Production starts with an empty school (no demo accounts) unless `SEED_DEMO=1`. |
 | `SESSION_SECRET` | In production | Signs session cookies. Generate with `openssl rand -hex 32`. |
 | `ANTHROPIC_API_KEY` | For AI features | Enables the assistant, AI drafting and WhatsApp auto-replies. Without it those features are hidden or fall back to a canned reply. |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | For live WhatsApp | Without them the app runs in **simulation mode**: messages are logged on the WhatsApp page but not sent. |
@@ -95,6 +96,18 @@ npm start       # run the production build
 npm run lint    # type-check
 npm test        # unit tests
 ```
+
+## Deploying to Render
+
+The repo includes a `render.yaml` Blueprint that creates the web service and a 1 GB persistent disk for the datastore. Serverless hosts such as Vercel are not suitable as-is, because their file system doesn't persist between requests.
+
+1. Sign in at https://dashboard.render.com with GitHub and allow Render to access this repository.
+2. Click **New → Blueprint**, pick `schoolsync-ai`, and click **Apply**.
+3. When prompted, fill in `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` (8+ characters) for the director account. `ANTHROPIC_API_KEY` and the `WHATSAPP_*` values are optional and can be added later under **Environment**.
+4. Wait for the deploy to finish, open the `onrender.com` URL, and sign in as the director.
+5. In **School Admin**, add classes and teachers first, then students, then parents (with WhatsApp numbers).
+
+The Starter instance plus disk costs roughly US$7–8/month. Every push to `main` redeploys automatically; the data on the disk is kept. To use your own domain, add it under the service's **Settings → Custom Domains**.
 
 ## Production notes
 
