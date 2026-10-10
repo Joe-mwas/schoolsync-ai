@@ -47,12 +47,16 @@ export async function readDb(): Promise<Database> {
   return load();
 }
 
-/** Apply a mutation atomically and persist it. */
+/**
+ * Apply a mutation atomically and persist it. The mutation runs on a copy, so
+ * if it throws partway through (e.g. a validation error) nothing is kept.
+ */
 export function mutateDb<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
   const run = store.queue.then(async () => {
-    const db = await load();
-    const result = await fn(db);
-    await persist(db);
+    const draft = structuredClone(await load());
+    const result = await fn(draft);
+    await persist(draft);
+    store.db = draft;
     return result;
   });
   store.queue = run.catch(() => undefined);

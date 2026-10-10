@@ -48,3 +48,20 @@ test("production first run creates only the configured director", async () => {
 
   assert.ok(initialDatabase({ NODE_ENV: "production", SEED_DEMO: "1" }).users.length > 1);
 });
+
+test("a mutation that throws partway leaves no trace", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "schoolsync-"));
+  process.env.DATA_FILE = path.join(dir, "db.json");
+  resetDbCache();
+  const before = (await readDb()).users[0].name;
+  await assert.rejects(
+    mutateDb((d) => {
+      d.users[0].name = "Half-applied";
+      throw new Error("validation failed");
+    }),
+  );
+  await mutateDb(() => undefined);
+  assert.equal((await readDb()).users[0].name, before);
+  const onDisk = JSON.parse(await readFile(process.env.DATA_FILE, "utf8"));
+  assert.equal(onDisk.users[0].name, before);
+});

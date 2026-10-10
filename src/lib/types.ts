@@ -12,9 +12,13 @@ export interface User {
   classIds: string[];
   /** For parents: the student user ids they are responsible for. */
   childIds: string[];
+  /** Set for accounts created or reset by a director; cleared once the user picks their own password. */
+  mustChangePassword?: boolean;
+  /** Incremented on password change/reset to sign out existing sessions. */
+  sessionVersion?: number;
 }
 
-export type PublicUser = Omit<User, "passwordHash">;
+export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
 
 export interface SchoolClass {
   id: string;

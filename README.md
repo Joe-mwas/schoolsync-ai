@@ -14,7 +14,8 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **AI assistant** | Everyone | Streaming chat that answers questions from the announcements and events *that user is allowed to see*. |
 | **WhatsApp** | Directors & teachers | Broadcast an announcement to every audience member with a phone number. Inbound WhatsApp messages from registered numbers get an AI reply grounded in that person's school info. Full message log and an inbound-message simulator for testing. |
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
-| **School admin** | Directors | Add people (with roles, classes, children, WhatsApp numbers) and manage the events calendar. |
+| **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
+| **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
 ## Quick start
 
@@ -99,6 +100,8 @@ src/
     auth.ts, session.ts, password.ts    cookie sessions + scrypt passwords
     db.ts                               JSON-file datastore with serialized, atomic writes
     permissions.ts                      who can see / post / manage what
+    users.ts                            creating, editing and removing people; password rules
+    rateLimit.ts                        failed sign-in lockout
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests
@@ -127,5 +130,7 @@ The repo includes a `render.yaml` Blueprint that creates the web service and a 1
 The Starter instance plus disk costs roughly US$7–8/month. Every push to `main` redeploys automatically; the data on the disk is kept. To use your own domain, add it under the service's **Settings → Custom Domains**.
 
 ## Production notes
+
+The sign-in lockout is kept in server memory, so it resets when the app restarts. That's fine for one instance; with several instances it would need shared storage.
 
 The JSON datastore suits a single school on a single server instance. For multiple instances or larger schools, swap `src/lib/db.ts` for a real database such as Postgres; the rest of the app only uses `readDb` / `mutateDb`.
