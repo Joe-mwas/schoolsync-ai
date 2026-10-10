@@ -151,6 +151,47 @@ async function postMessage(payload: unknown): Promise<SendResult> {
   }
 }
 
+export interface CredentialCheck {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Ask Meta about the configured phone number. Confirms the token and phone
+ * number ID work together, without sending anything.
+ */
+export async function checkWhatsAppCredentials(): Promise<CredentialCheck> {
+  if (!whatsappConfigured()) {
+    return { ok: false, message: "WHATSAPP_TOKEN and WHATSAPP_PHONE_NUMBER_ID must both be set." };
+  }
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(waEnv("WHATSAPP_PHONE_NUMBER_ID"))}?fields=display_phone_number,verified_name,quality_rating`,
+      { headers: { Authorization: `Bearer ${waEnv("WHATSAPP_TOKEN")}` }, signal: AbortSignal.timeout(10_000) },
+    );
+    const data = (await res.json().catch(() => ({}))) as {
+      display_phone_number?: string;
+      verified_name?: string;
+      quality_rating?: string;
+      error?: { message?: string; code?: number };
+    };
+    if (!res.ok) {
+      const code = data.error?.code;
+      const hint =
+        code === 190
+          ? "The access token is invalid or expired. Generate a permanent System User token (expiry: Never)."
+          : code === 100
+            ? "The phone number ID wasn't found for this token. Copy it again from WhatsApp → API Setup."
+            : "Check the token and phone number ID.";
+      return { ok: false, message: `Meta said: ${data.error?.message ?? `HTTP ${res.status}`}. ${hint}` };
+    }
+    const quality = data.quality_rating ? `, quality ${data.quality_rating}` : "";
+    return { ok: true, message: `Connected to ${data.display_phone_number ?? "the number"} (${data.verified_name ?? "unnamed"}${quality}).` };
+  } catch (err) {
+    return { ok: false, message: `Couldn't reach Meta: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
 export function sendWhatsAppText(to: string, body: string): Promise<SendResult> {
   return postMessage({
     messaging_product: "whatsapp",

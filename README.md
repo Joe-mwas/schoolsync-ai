@@ -16,6 +16,7 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
 | **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
 | **Backups** | Directors | A compressed backup is saved automatically each day there are changes, and before every spreadsheet import and every restore (14 daily and 20 other backups kept). Directors can back up now, download any backup or the current data, and restore from a listed backup or an uploaded file. A restore that would lock out the director doing it is refused. |
+| **Setup page** | Directors | A checklist of every setting (basics, Claude, WhatsApp) showing what's ready or missing and where to find each value, the webhook address to copy into Meta, and buttons to test the Claude key, the WhatsApp token/number, the webhook, and a real test message. |
 | **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
 | **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Staff sign in with email; parents and students can sign in with email or phone number. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
@@ -55,6 +56,7 @@ All settings are environment variables (see `.env.example`):
 | `WHATSAPP_TEMPLATE_NAME`, `WHATSAPP_TEMPLATE_LANGUAGE` | For reaching every parent | Approved template used for announcements to people outside the 24-hour window (language defaults to `en`). |
 | `DEFAULT_COUNTRY_CODE` | Recommended | Country code (e.g. `254`) used to convert local phone numbers like `0712 345 678` to international form, so parents can sign in with either. |
 | `DATA_FILE` | No | Path of the JSON datastore (default `data/db.json`). |
+| `PUBLIC_URL` | No | The site's public address, used by the Setup page's webhook test. On Render, `RENDER_EXTERNAL_URL` is used automatically. |
 | `SHOW_DEMO_ACCOUNTS` | No | Set to `1` to show demo-login buttons in production. |
 
 ### Connecting WhatsApp

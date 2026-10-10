@@ -74,6 +74,9 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}
           {!whatsappConfigured() && <div>WhatsApp is in simulation mode — messages are logged, not sent. Set <code>WHATSAPP_TOKEN</code> and <code>WHATSAPP_PHONE_NUMBER_ID</code> to go live.</div>}
+          <div style={{ marginTop: 6 }}>
+            <Link href="/setup">Open Setup to connect and test →</Link>
+          </div>
         </div>
       )}
       <div className="grid grid-2">
