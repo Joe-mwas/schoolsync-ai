@@ -1,6 +1,8 @@
 import { formatDate } from "@/components/AnnouncementCard";
 import { requireUser, toPublic } from "@/lib/auth";
-import { readDb } from "@/lib/db";
+import { listSnapshots } from "@/lib/backup";
+import { backupDirectory, readDb } from "@/lib/db";
+import BackupsCard from "./BackupsCard";
 import ImportCard from "./ImportCard";
 import PeopleTable from "./PeopleTable";
 import SchoolForms, { DeleteEventButton } from "./SchoolForms";
@@ -8,6 +10,7 @@ import SchoolForms, { DeleteEventButton } from "./SchoolForms";
 export default async function SchoolPage() {
   const me = await requireUser(["director"]);
   const db = await readDb();
+  const snapshots = await listSnapshots(backupDirectory());
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
   const names = new Map(db.users.map((u) => [u.id, u.name]));
   const events = [...db.events].sort((a, b) => a.date.localeCompare(b.date));
@@ -69,6 +72,8 @@ export default async function SchoolPage() {
         students={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: u.name }))}
         currentUserId={me.id}
       />
+
+      <BackupsCard initial={snapshots} />
     </div>
   );
 }

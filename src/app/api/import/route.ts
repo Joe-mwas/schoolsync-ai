@@ -1,5 +1,5 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
-import { mutateDb, newId, readDb } from "@/lib/db";
+import { mutateDb, newId, readDb, snapshotDb } from "@/lib/db";
 import { runImport } from "@/lib/importer";
 import { generateTemporaryPassword, hashPassword, hashPasswordAsync } from "@/lib/password";
 
@@ -26,6 +26,9 @@ export async function POST(req: Request) {
       },
     });
     if (dryRun) return Response.json(preview, { headers: { "Cache-Control": "no-store" } });
+
+    // A restore point in case the import isn't what was wanted.
+    if (needed > 0 || preview.summary.newClasses > 0 || preview.summary.linkedParents > 0) await snapshotDb("before-import");
 
     const pool = await Promise.all(
       Array.from({ length: needed }, async () => {

@@ -15,6 +15,7 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **WhatsApp** | Directors & teachers | Broadcast an announcement to every audience member with a phone number. Inbound WhatsApp messages from registered numbers get an AI reply grounded in that person's school info. Full message log and an inbound-message simulator for testing. |
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
 | **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
+| **Backups** | Directors | A compressed backup is saved automatically each day there are changes, and before every spreadsheet import and every restore (14 daily and 20 other backups kept). Directors can back up now, download any backup or the current data, and restore from a listed backup or an uploaded file. A restore that would lock out the director doing it is refused. |
 | **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
 | **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Staff sign in with email; parents and students can sign in with email or phone number. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
@@ -106,6 +107,7 @@ src/
     rateLimit.ts                        failed sign-in lockout
     importer.ts, importFormat.ts        CSV class-list import
     phone.ts                            phone number normalisation
+    backup.ts                           snapshots, retention, restore validation
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests
@@ -134,6 +136,8 @@ The repo includes a `render.yaml` Blueprint that creates the web service and a 1
 The Starter instance plus disk costs roughly US$7–8/month. Every push to `main` redeploys automatically; the data on the disk is kept. To use your own domain, add it under the service's **Settings → Custom Domains**.
 
 ## Production notes
+
+Backups are stored in a `backups` folder next to the data file (on Render, on the same persistent disk). They protect against mistakes such as a bad import, but not against losing the disk, so download a copy from **School Admin → Backups** regularly and keep it somewhere safe. Backups contain everyone's details and password hashes; treat them as private.
 
 The sign-in lockout is kept in server memory, so it resets when the app restarts. That's fine for one instance; with several instances it would need shared storage.
 

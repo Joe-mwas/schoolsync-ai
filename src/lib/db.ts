@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { backupDir, dailySnapshotDue, listSnapshots, writeSnapshot, type SnapshotReason } from "./backup.ts";
 import { initialDatabase } from "./seed.ts";
 import type { Database } from "./types.ts";
 
@@ -16,10 +17,12 @@ function dataFile(): string {
 interface Store {
   db: Database | null;
   queue: Promise<unknown>;
+  /** When the next automatic daily snapshot is worth checking for. */
+  nextDailyCheck: number;
 }
 
 const g = globalThis as typeof globalThis & { __schoolsyncStore?: Store };
-const store: Store = (g.__schoolsyncStore ??= { db: null, queue: Promise.resolve() });
+const store: Store = (g.__schoolsyncStore ??= { db: null, queue: Promise.resolve(), nextDailyCheck: 0 });
 
 async function load(): Promise<Database> {
   if (store.db) return store.db;
@@ -57,15 +60,56 @@ export function mutateDb<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
     const result = await fn(draft);
     await persist(draft);
     store.db = draft;
+    await maybeDailySnapshot(draft);
     return result;
   });
   store.queue = run.catch(() => undefined);
   return run;
 }
 
+/**
+ * Take the day's automatic snapshot on the first change of the day. Runs in
+ * the write queue, so it never sees a half-applied change. A failed backup is
+ * logged but never fails the user's change.
+ */
+async function maybeDailySnapshot(db: Database): Promise<void> {
+  if (Date.now() < store.nextDailyCheck) return;
+  try {
+    const dir = backupDir(dataFile());
+    if (dailySnapshotDue(await listSnapshots(dir))) await writeSnapshot(dir, db, "daily");
+    store.nextDailyCheck = Date.now() + 60 * 60 * 1000;
+  } catch (err) {
+    console.error("daily backup failed", err);
+    store.nextDailyCheck = Date.now() + 10 * 60 * 1000;
+  }
+}
+
+/** Snapshot the current data, in the write queue so it's consistent. */
+export function snapshotDb(reason: SnapshotReason) {
+  const run = store.queue.then(async () => writeSnapshot(backupDir(dataFile()), await load(), reason));
+  store.queue = run.catch(() => undefined);
+  return run;
+}
+
+/** Replace all data with a restored backup, snapshotting the current data first. */
+export function replaceDb(next: Database) {
+  const run = store.queue.then(async () => {
+    await writeSnapshot(backupDir(dataFile()), await load(), "before-restore");
+    await persist(next);
+    store.db = next;
+  });
+  store.queue = run.catch(() => undefined);
+  return run;
+}
+
+export function backupDirectory(): string {
+  return backupDir(dataFile());
+}
+
 /** Drop the in-memory copy (used by tests that swap DATA_FILE). */
 export function resetDbCache(): void {
   store.db = null;
+  store.nextDailyCheck = 0;
 }
 
 export function newId(prefix: string): string {
