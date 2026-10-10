@@ -13,7 +13,17 @@ async function post(url: string, body: unknown): Promise<string | null> {
   return res.ok ? null : (await res.json().catch(() => ({}))).error ?? "Request failed";
 }
 
-export default function SchoolForms({ classes, students, teachers }: { classes: Option[]; students: Option[]; teachers: Option[] }) {
+export default function SchoolForms({
+  classes,
+  students,
+  teachers,
+  canCreateAdmin,
+}: {
+  classes: Option[];
+  students: Option[];
+  teachers: Option[];
+  canCreateAdmin: boolean;
+}) {
   const router = useRouter();
   const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "" });
   const [event, setEvent] = useState({ title: "", date: "", description: "" });
@@ -65,11 +75,12 @@ export default function SchoolForms({ classes, students, teachers }: { classes: 
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="director">Director</option>
+              {canCreateAdmin && <option value="admin">Administrator</option>}
             </select>
           </label>
           <label>
             Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-            <input type="email" value={person.email} onChange={p("email")} required={person.role === "director" || person.role === "teacher"} />
+            <input type="email" value={person.email} onChange={p("email")} required={person.role === "admin" || person.role === "director" || person.role === "teacher"} />
           </label>
           <label>WhatsApp phone<input value={person.phone} onChange={p("phone")} placeholder="+2547…" /></label>
           <label>Temporary password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>

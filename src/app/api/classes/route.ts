@@ -1,10 +1,11 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId } from "@/lib/db";
 import type { SchoolClass } from "@/lib/types";
+import { LEADERS } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
-    await requireApiUser(["director"]);
+    await requireApiUser(LEADERS);
     const input = (await req.json().catch(() => ({}))) as { name?: string; teacherId?: string };
     const name = input.name?.trim();
     if (!name) throw new HttpError(400, "Class name is required");

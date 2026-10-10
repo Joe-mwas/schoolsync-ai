@@ -26,7 +26,7 @@ services:
       # Turns local numbers like 0712 345 678 into +254712345678; change for other countries
       - key: DEFAULT_COUNTRY_CODE
         value: "254"
-      # Director account created on first start
+      # Administrator (system owner) account created on first start
       - key: ADMIN_NAME
         sync: false
       - key: ADMIN_EMAIL

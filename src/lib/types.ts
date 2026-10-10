@@ -1,5 +1,14 @@
-export const ROLES = ["director", "teacher", "parent", "student"] as const;
+export const ROLES = ["admin", "director", "teacher", "parent", "student"] as const;
 export type Role = (typeof ROLES)[number];
+
+/** Run the school: everything a director can do. The admin also owns Setup and AI review. */
+export const LEADERS: Role[] = ["admin", "director"];
+/** Can publish announcements and design posters. */
+export const STAFF: Role[] = ["admin", "director", "teacher"];
+/** Who announcements can be addressed to. */
+export const AUDIENCE_ROLES: Role[] = ["teacher", "parent", "student"];
+
+export const isLeader = (role: Role): boolean => role === "admin" || role === "director";
 
 export interface User {
   id: string;
@@ -85,6 +94,21 @@ export interface WhatsAppMessage {
   providerMessageId?: string | null;
 }
 
+export type AiChannel = "assistant" | "whatsapp" | "draft";
+
+/** One question to the AI and its answer, kept so the administrator can review them. */
+export interface AiLogEntry {
+  id: string;
+  channel: AiChannel;
+  userId: string | null;
+  question: string;
+  answer: string;
+  createdAt: string;
+  flagged?: boolean;
+  note?: string | null;
+  reviewedAt?: string | null;
+}
+
 export interface Database {
   users: User[];
   classes: SchoolClass[];
@@ -92,4 +116,5 @@ export interface Database {
   events: SchoolEvent[];
   posters: Poster[];
   whatsappMessages: WhatsAppMessage[];
+  aiLogs: AiLogEntry[];
 }

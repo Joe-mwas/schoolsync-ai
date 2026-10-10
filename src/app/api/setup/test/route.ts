@@ -66,7 +66,7 @@ async function sendTest(phone: string, userId: string): Promise<Result> {
 
 export async function POST(req: Request) {
   try {
-    const me = await requireApiUser(["director"]);
+    const me = await requireApiUser(["admin"]);
     const { kind, phone } = (await req.json().catch(() => ({}))) as { kind?: string; phone?: string };
     let result: Result;
     switch (kind) {

@@ -116,7 +116,9 @@ export function validateDatabase(value: unknown): Database {
       bad("a person record is incomplete");
     }
   }
-  if (!(db.users as { role: string }[]).some((u) => u.role === "director")) bad("it has no director account");
+  if (!(db.users as { role: string }[]).some((u) => u.role === "director" || u.role === "admin")) {
+    bad("it has no administrator or director account");
+  }
   return value as Database;
 }
 

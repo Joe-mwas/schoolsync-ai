@@ -16,7 +16,9 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
 | **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
 | **Backups** | Directors | A compressed backup is saved automatically each day there are changes, and before every spreadsheet import and every restore (14 daily and 20 other backups kept). Directors can back up now, download any backup or the current data, and restore from a listed backup or an uploaded file. A restore that would lock out the director doing it is refused. |
-| **Setup page** | Directors | A checklist of every setting (basics, Claude, WhatsApp) showing what's ready or missing and where to find each value, the webhook address to copy into Meta, and buttons to test the Claude key, the WhatsApp token/number, the webhook, and a real test message. |
+| **Roles** | Everyone | **Administrator** (the system owner, created from `ADMIN_EMAIL`): everything a director can do, plus Setup, AI Review and managing administrator accounts. **Director**: runs the school (people, classes, announcements, WhatsApp, backups). **Teacher**, **parent**, **student** as below. |
+| **AI Review** | Administrator | Every question asked to the AI (assistant chat, WhatsApp replies, Draft with AI) with the answer it gave; mark answers as right or flag them as wrong with a note; filter by unreviewed, flagged, source or text. The last 5,000 conversations are kept, and the assistant page tells users conversations may be reviewed. |
+| **Setup page** | Administrator | A checklist of every setting (basics, Claude, WhatsApp) showing what's ready or missing and where to find each value, the webhook address to copy into Meta, and buttons to test the Claude key, the WhatsApp token/number, the webhook, and a real test message. |
 | **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
 | **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Staff sign in with email; parents and students can sign in with email or phone number. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
@@ -47,7 +49,7 @@ All settings are environment variables (see `.env.example`):
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | First production start | Creates the director account. Production starts with an empty school (no demo accounts) unless `SEED_DEMO=1`. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | First production start | Creates the administrator account (the system owner; an existing director with this email is upgraded to administrator). Production starts with an empty school (no demo accounts) unless `SEED_DEMO=1`. |
 | `SESSION_SECRET` | In production | Signs session cookies. Generate with `openssl rand -hex 32`. |
 | `ANTHROPIC_API_KEY` | For AI features | Enables the assistant, AI drafting and WhatsApp auto-replies. Without it those features are hidden or fall back to a canned reply. |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | For live WhatsApp | Without them the app runs in **simulation mode**: messages are logged on the WhatsApp page but not sent. |
@@ -131,7 +133,7 @@ The repo includes a `render.yaml` Blueprint that creates the web service (in Ren
 
 1. Sign in at https://dashboard.render.com with GitHub and allow Render to access this repository.
 2. Click **New → Blueprint**, pick `schoolsync-ai`, and click **Apply**.
-3. When prompted, fill in `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` (8+ characters) for the director account. `ANTHROPIC_API_KEY` and the `WHATSAPP_*` values are optional and can be added later under **Environment**.
+3. When prompted, fill in `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` (8+ characters) for the administrator account. `ANTHROPIC_API_KEY` and the `WHATSAPP_*` values are optional and can be added later under **Environment**.
 4. Wait for the deploy to finish, open the `onrender.com` URL, and sign in as the director.
 5. In **School Admin**, add classes and teachers first, then students, then parents (with WhatsApp numbers).
 

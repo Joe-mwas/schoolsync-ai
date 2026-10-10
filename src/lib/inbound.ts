@@ -1,6 +1,8 @@
 import { aiConfigured, generateReply } from "./ai.ts";
+import { logAiExchange } from "./aiLog.ts";
 import { mutateDb, newId, readDb } from "./db.ts";
 import type { WhatsAppMessage } from "./types.ts";
+import { phoneKey } from "./phone.ts";
 import { applyStatusUpdates, normalizePhone, sendWhatsAppText, type StatusUpdate } from "./whatsapp.ts";
 
 const UNKNOWN_SENDER_REPLY =
@@ -10,8 +12,9 @@ const NO_AI_REPLY = "Thanks for your message. The school office will get back to
 /** Record an inbound WhatsApp message and reply via the AI assistant. */
 export async function handleInboundMessage(from: string, text: string): Promise<WhatsAppMessage> {
   const db = await readDb();
-  const phone = normalizePhone(from);
-  const user = db.users.find((u) => u.phone && normalizePhone(u.phone) === phone) ?? null;
+  // Meta sends international digits; the simulator may get a local number.
+  const phone = phoneKey(from) || normalizePhone(from);
+  const user = db.users.find((u) => u.phone && phoneKey(u.phone) === phone) ?? null;
 
   const inbound: WhatsAppMessage = {
     id: newId("wa"),
@@ -34,6 +37,7 @@ export async function handleInboundMessage(from: string, text: string): Promise<
   } else {
     try {
       reply = (await generateReply(user, db, text)) || NO_AI_REPLY;
+      await logAiExchange("whatsapp", user.id, text, reply);
     } catch (err) {
       console.error("WhatsApp AI reply failed", err);
       reply = NO_AI_REPLY;

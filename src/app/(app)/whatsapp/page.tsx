@@ -2,9 +2,10 @@ import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { templateConfig, whatsappConfigured } from "@/lib/whatsapp";
 import Simulator from "./Simulator";
+import { LEADERS } from "@/lib/types";
 
 export default async function WhatsAppPage() {
-  await requireUser(["director"]);
+  await requireUser(LEADERS);
   const db = await readDb();
   const names = new Map(db.users.map((u) => [u.id, u.name]));
   const messages = [...db.whatsappMessages].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 200);

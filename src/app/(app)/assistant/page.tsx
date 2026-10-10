@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import Chat from "./Chat";
 
 const SUGGESTIONS: Record<string, string[]> = {
+  admin: ["Summarise this week's announcements", "What events are coming up?", "Draft a reminder about the PTA meeting"],
   director: ["Summarise this week's announcements", "Draft a reminder about the PTA meeting", "What events are coming up?"],
   teacher: ["Draft a homework reminder for my class", "What's happening this month?", "Write a note to parents about the science trip"],
   parent: ["What does my child need to do this week?", "When is the next PTA meeting?", "Are there any urgent notices?"],
@@ -17,6 +18,7 @@ export default async function AssistantPage() {
         <div>
           <h1>AI Assistant</h1>
           <p>Ask about announcements, events and deadlines, or get help writing a message.</p>
+          <p className="small">Conversations are kept so the school&apos;s administrator can check the answers are right.</p>
         </div>
       </div>
       {aiConfigured() ? (

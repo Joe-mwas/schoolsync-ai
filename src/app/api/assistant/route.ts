@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { aiConfigured, streamAssistantReply } from "@/lib/ai";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
+import { logAiExchange } from "@/lib/aiLog";
 import { readDb } from "@/lib/db";
 
 interface ChatTurn {
@@ -27,18 +28,23 @@ export async function POST(req: Request) {
     }
 
     const db = await readDb();
+    const question = history[history.length - 1].content as string;
     const encoder = new TextEncoder();
     const body = new ReadableStream<Uint8Array>({
       async start(controller) {
+        let answer = "";
         try {
           for await (const chunk of streamAssistantReply(user, db, history)) {
+            answer += chunk;
             controller.enqueue(encoder.encode(chunk));
           }
         } catch (err) {
           console.error("assistant stream failed", err);
+          answer += "\n\n[The assistant hit an error.]";
           controller.enqueue(encoder.encode("\n\n[The assistant hit an error. Please try again.]"));
         } finally {
           controller.close();
+          await logAiExchange("assistant", user.id, question, answer);
         }
       },
     });

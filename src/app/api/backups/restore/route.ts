@@ -1,6 +1,7 @@
 import { errorResponse, HttpError, requireApiUser, setSessionCookie } from "@/lib/auth";
 import { decodeBackup, readSnapshot } from "@/lib/backup";
 import { backupDirectory, replaceDb } from "@/lib/db";
+import { LEADERS } from "@/lib/types";
 
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
@@ -10,7 +11,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
  */
 export async function POST(req: Request) {
   try {
-    const me = await requireApiUser(["director"]);
+    const me = await requireApiUser(LEADERS);
     const name = new URL(req.url).searchParams.get("name");
     let raw: Buffer;
     if (name) {
@@ -24,11 +25,11 @@ export async function POST(req: Request) {
     const restored = decodeBackup(raw);
 
     // Don't let a restore lock out the person doing it.
-    const self = restored.users.find((u) => u.id === me.id && u.role === "director");
+    const self = restored.users.find((u) => u.id === me.id && u.role === me.role);
     if (!self) {
       throw new HttpError(
         400,
-        "Your director account isn't in that backup, so restoring it would sign you out for good. Ask a director who is in the backup to restore it.",
+        "Your account isn't in that backup, so restoring it would sign you out for good. Ask someone whose account is in the backup to restore it.",
       );
     }
     await replaceDb(restored);

@@ -6,9 +6,10 @@ import BackupsCard from "./BackupsCard";
 import ImportCard from "./ImportCard";
 import PeopleTable from "./PeopleTable";
 import SchoolForms, { DeleteEventButton } from "./SchoolForms";
+import { LEADERS } from "@/lib/types";
 
 export default async function SchoolPage() {
-  const me = await requireUser(["director"]);
+  const me = await requireUser(LEADERS);
   const db = await readDb();
   const snapshots = await listSnapshots(backupDirectory());
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
@@ -30,6 +31,7 @@ export default async function SchoolPage() {
         classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}
         students={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: u.name }))}
         teachers={db.users.filter((u) => u.role === "teacher").map((u) => ({ id: u.id, name: u.name }))}
+        canCreateAdmin={me.role === "admin"}
       />
 
       <div className="card">
@@ -71,6 +73,7 @@ export default async function SchoolPage() {
         classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}
         students={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: u.name }))}
         currentUserId={me.id}
+        currentUserRole={me.role}
       />
 
       <BackupsCard initial={snapshots} />

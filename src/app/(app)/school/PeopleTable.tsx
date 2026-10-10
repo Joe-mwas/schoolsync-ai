@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/permissions";
-import type { PublicUser } from "@/lib/types";
+import type { PublicUser, Role } from "@/lib/types";
 
 interface Option {
   id: string;
@@ -15,11 +15,13 @@ export default function PeopleTable({
   classes,
   students,
   currentUserId,
+  currentUserRole,
 }: {
   people: PublicUser[];
   classes: Option[];
   students: Option[];
   currentUserId: string;
+  currentUserRole: Role;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<string | null>(null);
@@ -105,6 +107,7 @@ export default function PeopleTable({
                       : p.classIds.map((id) => classNames.get(id)).join(", ") || "—"}
                   </td>
                   <td>
+                    {(p.role !== "admin" || currentUserRole === "admin") && (
                     <div className="row" style={{ gap: "0.4rem", flexWrap: "nowrap" }}>
                       <button className="secondary small" onClick={() => setEditing(p.id)}>Edit</button>
                       {p.id !== currentUserId && (
@@ -114,6 +117,7 @@ export default function PeopleTable({
                         </>
                       )}
                     </div>
+                    )}
                   </td>
                 </tr>
               ),
@@ -166,7 +170,7 @@ function EditPerson({
         <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
         <label>
           Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "director" || person.role === "teacher"} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "admin" || person.role === "director" || person.role === "teacher"} />
         </label>
         <label>WhatsApp phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2547…" /></label>
       </div>

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { HttpError } from "../src/lib/errors.ts";
 import { verifyPassword } from "../src/lib/password.ts";
 import { seedDatabase } from "../src/lib/seed.ts";
-import { createPerson, deletePerson, setPassword, updatePerson } from "../src/lib/users.ts";
+import { assertCanManage, createPerson, deletePerson, setPassword, updatePerson } from "../src/lib/users.ts";
 
 const rejects = (fn: () => unknown, status: number, re?: RegExp) =>
   assert.throws(fn, (e: unknown) => e instanceof HttpError && e.status === status && (!re || re.test(e.message)));
@@ -24,7 +24,7 @@ test("creating people validates input", () => {
   const db = seedDatabase();
   rejects(() => createPerson(db, { name: "X", email: "teacher@schoolsync.test", role: "parent", password: "longenough" }, id), 409);
   rejects(() => createPerson(db, { name: "X", email: "bad", role: "parent", password: "longenough" }, id), 400, /email/);
-  rejects(() => createPerson(db, { name: "X", email: "x@y.z", role: "admin", password: "longenough" }, id), 400, /role/);
+  rejects(() => createPerson(db, { name: "X", email: "x@y.z", role: "superuser", password: "longenough" }, id), 400, /role/);
   rejects(() => createPerson(db, { name: "X", email: "x@y.z", role: "parent", password: "short" }, id), 400, /8 characters/);
   rejects(() => createPerson(db, { name: "X", email: "x@y.z", role: "parent", password: "longenough", childIds: ["u-teacher1"] }, id), 400, /student/);
   rejects(() => createPerson(db, { name: "X", email: "x@y.z", role: "student", password: "longenough", classIds: ["c-grade7", "c-grade8"] }, id), 400);
@@ -53,17 +53,33 @@ test("editing validates and only touches given fields", () => {
   rejects(() => updatePerson(db, "nobody", { name: "x" }), 404);
 });
 
-test("removing people cleans up links and protects directors", () => {
+test("removing people cleans up links and protects leaders", () => {
   const db = seedDatabase();
   rejects(() => deletePerson(db, "u-director", "u-director"), 400, /own account/);
+  // The demo school has one administrator, who can't be removed.
+  rejects(() => deletePerson(db, "u-director", "u-admin"), 400, /at least one administrator/);
+  // Directors can be removed while an administrator remains.
+  deletePerson(db, "u-admin", "u-director");
+  assert.ok(!db.users.some((u) => u.role === "director"));
+
+  deletePerson(db, "u-admin", "u-student1");
+  assert.deepEqual(db.users.find((u) => u.id === "u-parent1")!.childIds, []);
+  deletePerson(db, "u-admin", "u-teacher1");
+  assert.equal(db.classes.find((c) => c.id === "c-grade7")!.teacherId, null);
+});
+
+test("with no administrator, the last director is protected", () => {
+  const db = seedDatabase();
+  db.users = db.users.filter((u) => u.role !== "admin");
   createPerson(db, { name: "Deputy", email: "deputy@x.org", role: "director", password: "longenough" }, () => "u-deputy");
   deletePerson(db, "u-deputy", "u-director");
-  rejects(() => deletePerson(db, "u-teacher1", "u-deputy"), 400, /at least one director/);
+  rejects(() => deletePerson(db, "u-teacher1", "u-deputy"), 400, /at least one administrator or director/);
+});
 
-  deletePerson(db, "u-deputy", "u-student1");
-  assert.deepEqual(db.users.find((u) => u.id === "u-parent1")!.childIds, []);
-  deletePerson(db, "u-deputy", "u-teacher1");
-  assert.equal(db.classes.find((c) => c.id === "c-grade7")!.teacherId, null);
+test("only an administrator manages administrator accounts", () => {
+  assert.doesNotThrow(() => assertCanManage({ role: "admin" }, { role: "admin" }));
+  assert.doesNotThrow(() => assertCanManage({ role: "director" }, { role: "teacher" }));
+  rejects(() => assertCanManage({ role: "director" }, { role: "admin" }), 403, /administrator/);
 });
 
 test("setting a password signs out other sessions", () => {

@@ -36,7 +36,7 @@ function Checklist({ section }: { section: SetupSection }) {
 }
 
 export default async function SetupPage() {
-  const me = await requireUser(["director"]);
+  const me = await requireUser(["admin"]);
   const snapshots = await listSnapshots(backupDirectory());
   const sections = setupChecklist(process.env, { lastBackupAt: snapshots[0]?.createdAt ?? null });
   const { ready, total } = countReady(sections);

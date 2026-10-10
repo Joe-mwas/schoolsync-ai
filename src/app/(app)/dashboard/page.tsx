@@ -6,6 +6,7 @@ import { readDb } from "@/lib/db";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "@/lib/permissions";
 import type { Database, User } from "@/lib/types";
 import { whatsappConfigured } from "@/lib/whatsapp";
+import { isLeader } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -70,6 +71,15 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         <Stat label="Parents" value={count("parent")} />
         <Stat label="WhatsApp sent (7 days)" value={waWeek} />
       </div>
+      {user.role === "admin" && (
+        <Link href="/ai-review?show=unreviewed" className="card row" style={{ justifyContent: "space-between", color: "inherit" }}>
+          <span>
+            <strong>AI answers waiting for your review</strong>
+            <span className="small muted"> · {db.aiLogs.filter((l) => l.flagged).length} flagged as wrong</span>
+          </span>
+          <span className="stat-value" style={{ fontSize: "1.4rem" }}>{db.aiLogs.filter((l) => !l.reviewedAt).length} →</span>
+        </Link>
+      )}
       {(!aiConfigured() || !whatsappConfigured()) && (
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}
@@ -201,7 +211,7 @@ export default async function DashboardPage() {
           <p>{ROLE_LABELS[user.role]} dashboard</p>
         </div>
       </div>
-      {user.role === "director" && <DirectorDashboard user={user} db={db} />}
+      {isLeader(user.role) && <DirectorDashboard user={user} db={db} />}
       {user.role === "teacher" && <TeacherDashboard user={user} db={db} />}
       {(user.role === "parent" || user.role === "student") && <FamilyDashboard user={user} db={db} />}
     </div>

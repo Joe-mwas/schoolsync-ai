@@ -57,7 +57,7 @@ test("reads snapshots back, gzipped or plain, and rejects bad files", async () =
     assert.throws(() => decodeBackup(input), (e: unknown) => e instanceof HttpError && e.status === 400 && re.test(e.message));
   rejects("not json", /isn't a SchoolSync backup/);
   rejects(JSON.stringify({ users: [] }), /missing classes/);
-  rejects(JSON.stringify({ ...db, users: db.users.filter((u) => u.role !== "director") }), /no director/);
+  rejects(JSON.stringify({ ...db, users: db.users.filter((u) => u.role !== "director" && u.role !== "admin") }), /no administrator or director/);
   rejects(JSON.stringify({ ...db, users: [...db.users, { id: "x", role: "hacker" }] }), /incomplete/);
   await assert.rejects(readSnapshot(dir, "../../db.json"), /Unknown backup/);
 });

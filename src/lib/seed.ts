@@ -5,17 +5,17 @@ import type { Database } from "./types.ts";
 export const DEMO_PASSWORD = "schoolsync";
 
 /**
- * An empty school with a single director account, used for real deployments
- * so no account ships with a publicly known password.
+ * An empty school with a single administrator account (the system owner),
+ * used for real deployments so no account ships with a publicly known password.
  */
 export function seedProductionDatabase(admin: { name: string; email: string; password: string }): Database {
   return {
     users: [
       {
-        id: "u-director",
+        id: "u-admin",
         name: admin.name,
         email: admin.email.trim().toLowerCase(),
-        role: "director",
+        role: "admin",
         passwordHash: hashPassword(admin.password),
         classIds: [],
         childIds: [],
@@ -26,6 +26,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     events: [],
     posters: [],
     whatsappMessages: [],
+    aiLogs: [],
   };
 }
 
@@ -39,7 +40,7 @@ export function initialDatabase(env: NodeJS.ProcessEnv = process.env): Database 
       "First production start needs ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters) to create the director account, or SEED_DEMO=1 for demo data.",
     );
   }
-  return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "School Director", email, password });
+  return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "Administrator", email, password });
 }
 
 export function seedDatabase(): Database {
@@ -49,6 +50,7 @@ export function seedDatabase(): Database {
 
   return {
     users: [
+      { id: "u-admin", name: "System Administrator", email: "admin@schoolsync.test", role: "admin", passwordHash: pw, classIds: [], childIds: [] },
       { id: "u-director", name: "Grace Wanjiru", email: "director@schoolsync.test", role: "director", passwordHash: pw, phone: "+254700000001", classIds: [], childIds: [] },
       { id: "u-teacher1", name: "Peter Otieno", email: "teacher@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000002", classIds: ["c-grade7"], childIds: [] },
       { id: "u-teacher2", name: "Mary Akinyi", email: "teacher2@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000003", classIds: ["c-grade8"], childIds: [] },
@@ -94,5 +96,6 @@ export function seedDatabase(): Database {
     ],
     posters: [],
     whatsappMessages: [],
+    aiLogs: [],
   };
 }
