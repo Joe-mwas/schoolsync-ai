@@ -125,7 +125,7 @@ npm test        # unit tests
 
 ## Deploying to Render
 
-The repo includes a `render.yaml` Blueprint that creates the web service and a 1 GB persistent disk for the datastore. Serverless hosts such as Vercel are not suitable as-is, because their file system doesn't persist between requests.
+The repo includes a `render.yaml` Blueprint that creates the web service (in Render's Frankfurt region, the closest to East Africa; change `region` before the first deploy if your school is elsewhere) and a 1 GB persistent disk for the datastore. Serverless hosts such as Vercel are not suitable as-is, because their file system doesn't persist between requests.
 
 1. Sign in at https://dashboard.render.com with GitHub and allow Render to access this repository.
 2. Click **New → Blueprint**, pick `schoolsync-ai`, and click **Apply**.
