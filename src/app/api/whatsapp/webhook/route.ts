@@ -1,27 +1,31 @@
 import { after } from "next/server";
 import { handleInboundMessage, handleStatusUpdates } from "@/lib/inbound";
-import { parseIncomingMessages, parseStatusUpdates, verifyWebhookSignature } from "@/lib/whatsapp";
+import {
+  checkWebhookVerification,
+  parseIncomingMessages,
+  parseStatusUpdates,
+  verifyWebhookSignature,
+  waEnv,
+} from "@/lib/whatsapp";
 
 /** Meta's webhook verification handshake. */
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const mode = url.searchParams.get("hub.mode");
-  const token = url.searchParams.get("hub.verify_token");
-  const challenge = url.searchParams.get("hub.challenge");
-  if (mode === "subscribe" && token && token === process.env.WHATSAPP_VERIFY_TOKEN && challenge) {
-    return new Response(challenge, { status: 200 });
-  }
+  const result = checkWebhookVerification(new URL(req.url).searchParams);
+  if (result.ok) return new Response(result.challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+  console.warn(`WhatsApp webhook verification failed: ${result.reason}`);
   return new Response("Forbidden", { status: 403 });
 }
 
 export async function POST(req: Request) {
   const raw = await req.text();
-  const secret = process.env.WHATSAPP_APP_SECRET;
+  const secret = waEnv("WHATSAPP_APP_SECRET");
   if (secret) {
     if (!verifyWebhookSignature(raw, req.headers.get("x-hub-signature-256"), secret)) {
+      console.warn("WhatsApp webhook rejected: signature doesn't match WHATSAPP_APP_SECRET (check it's the App secret from App settings → Basic)");
       return new Response("Invalid signature", { status: 401 });
     }
   } else if (process.env.NODE_ENV === "production") {
+    console.warn("WhatsApp webhook rejected: WHATSAPP_APP_SECRET is not set on the server");
     return new Response("WHATSAPP_APP_SECRET is not configured", { status: 500 });
   }
 

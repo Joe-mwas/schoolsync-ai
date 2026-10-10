@@ -11,8 +11,45 @@ import type { WhatsAppMessage } from "./types.ts";
 
 const GRAPH_VERSION = "v21.0";
 
+/**
+ * WhatsApp settings, trimmed: values pasted into a hosting dashboard often
+ * pick up a stray space or newline, which would otherwise fail silently.
+ */
+export function waEnv(
+  name: "WHATSAPP_TOKEN" | "WHATSAPP_PHONE_NUMBER_ID" | "WHATSAPP_VERIFY_TOKEN" | "WHATSAPP_APP_SECRET",
+  env: Record<string, string | undefined> = process.env,
+): string {
+  return env[name]?.trim() ?? "";
+}
+
 export function whatsappConfigured(): boolean {
-  return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+  return Boolean(waEnv("WHATSAPP_TOKEN") && waEnv("WHATSAPP_PHONE_NUMBER_ID"));
+}
+
+export type VerifyResult = { ok: true; challenge: string } | { ok: false; reason: string };
+
+/**
+ * Meta's webhook verification handshake. On failure, `reason` says why in
+ * terms safe to log (it never includes either token).
+ */
+export function checkWebhookVerification(params: URLSearchParams, env: Record<string, string | undefined> = process.env): VerifyResult {
+  const expected = waEnv("WHATSAPP_VERIFY_TOKEN", env);
+  const mode = params.get("hub.mode");
+  const given = params.get("hub.verify_token")?.trim() ?? "";
+  const challenge = params.get("hub.challenge") ?? "";
+  if (!expected) return { ok: false, reason: "WHATSAPP_VERIFY_TOKEN is not set on the server (add it and redeploy)" };
+  if (mode !== "subscribe") return { ok: false, reason: `hub.mode is "${mode ?? ""}", expected "subscribe"` };
+  if (!given) return { ok: false, reason: "the request had no hub.verify_token" };
+  if (!challenge) return { ok: false, reason: "the request had no hub.challenge" };
+  const a = Buffer.from(expected);
+  const b = Buffer.from(given);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return {
+      ok: false,
+      reason: `the verify token doesn't match WHATSAPP_VERIFY_TOKEN (server's is ${a.length} characters, received ${b.length}); retype it in both places`,
+    };
+  }
+  return { ok: true, challenge };
 }
 
 /** Normalise to the digits-only international format the Cloud API uses. */
@@ -93,11 +130,11 @@ async function postMessage(payload: unknown): Promise<SendResult> {
   if (!whatsappConfigured()) return { status: "simulated" };
   try {
     const res = await fetch(
-      `https://graph.facebook.com/${GRAPH_VERSION}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/${GRAPH_VERSION}/${waEnv("WHATSAPP_PHONE_NUMBER_ID")}/messages`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          Authorization: `Bearer ${waEnv("WHATSAPP_TOKEN")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
