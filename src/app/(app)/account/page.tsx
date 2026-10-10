@@ -10,7 +10,7 @@ export default async function AccountPage() {
       <div className="page-header">
         <div>
           <h1>My account</h1>
-          <p>{user.name} · {ROLE_LABELS[user.role]} · {user.email}</p>
+          <p>{[user.name, ROLE_LABELS[user.role], user.email || user.phone].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
       <PhoneForm initial={user.phone ?? ""} />

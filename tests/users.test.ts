@@ -45,7 +45,7 @@ test("editing validates and only touches given fields", () => {
   const db = seedDatabase();
   const before = db.users.find((u) => u.id === "u-parent1")!;
   const u = updatePerson(db, "u-parent1", { phone: "+254 711 111 111" });
-  assert.equal(u.phone, "+254 711 111 111");
+  assert.equal(u.phone, "+254711111111");
   assert.equal(u.name, before.name);
   assert.equal(updatePerson(db, "u-parent1", { phone: "" }).phone, undefined);
   rejects(() => updatePerson(db, "u-parent1", { email: "teacher@schoolsync.test" }), 409);
@@ -75,4 +75,17 @@ test("setting a password signs out other sessions", () => {
   setPassword(u, "another-pw-9", { mustChange: true });
   assert.equal(u.sessionVersion, 2);
   assert.equal(u.mustChangePassword, true);
+});
+
+test("parents and students may skip email; staff may not; phones are unique", () => {
+  process.env.DEFAULT_COUNTRY_CODE = "254";
+  const db = seedDatabase();
+  const p = createPerson(db, { name: "Phone Parent", role: "parent", phone: "0733 000 111", password: "longenough" }, id);
+  assert.equal(p.email, "");
+  assert.equal(p.phone, "+254733000111");
+  rejects(() => createPerson(db, { name: "No Contact", role: "parent", password: "longenough" }, id), 400, /phone number to sign in/);
+  rejects(() => createPerson(db, { name: "T", role: "teacher", password: "longenough" }, id), 400, /email/);
+  rejects(() => createPerson(db, { name: "Dup", role: "parent", phone: "+254 733 000 111", password: "longenough" }, id), 409, /Phone/);
+  assert.ok(createPerson(db, { name: "Kid", role: "student", password: "longenough" }, id));
+  rejects(() => updatePerson(db, p.id, { phone: "" }), 400, /phone number to sign in/);
 });

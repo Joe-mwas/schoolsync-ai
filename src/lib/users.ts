@@ -1,5 +1,6 @@
 import { HttpError } from "./errors.ts";
 import { hashPassword } from "./password.ts";
+import { canonicalPhone, phoneKey } from "./phone.ts";
 import { ROLES, type Database, type Role, type User } from "./types.ts";
 
 export const MIN_PASSWORD_LENGTH = 8;
@@ -19,8 +20,12 @@ export function setPassword(user: User, password: string, opts: { mustChange: bo
   user.sessionVersion = (user.sessionVersion ?? 0) + 1;
 }
 
-function normalizeEmail(email: unknown): string {
+/** Staff sign in with email; parents and students may use a phone number instead. */
+const EMAIL_REQUIRED: Role[] = ["director", "teacher"];
+
+function normalizeEmail(email: unknown, role: Role): string {
   const e = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!e && !EMAIL_REQUIRED.includes(role)) return "";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new HttpError(400, "Enter a valid email address");
   return e;
 }
@@ -28,16 +33,37 @@ function normalizeEmail(email: unknown): string {
 function normalizePhone(phone: unknown): string | undefined {
   if (phone === undefined || phone === null) return undefined;
   if (typeof phone !== "string") throw new HttpError(400, "Invalid phone number");
-  const p = phone.trim();
-  if (!p) return undefined;
-  if (!/^\+?[\d\s()-]{7,20}$/.test(p)) throw new HttpError(400, "Phone numbers should look like +254700000000");
-  return p;
+  if (!phone.trim()) return undefined;
+  const canonical = canonicalPhone(phone);
+  if (!canonical) throw new HttpError(400, "Phone numbers should look like +254700000000");
+  return canonical;
 }
 
 function checkEmailFree(db: Database, email: string, exceptId?: string) {
-  if (db.users.some((u) => u.id !== exceptId && u.email.toLowerCase() === email)) {
+  if (email && db.users.some((u) => u.id !== exceptId && u.email.toLowerCase() === email)) {
     throw new HttpError(409, "Email already in use");
   }
+}
+
+/** Phones double as sign-in names, so they must be unique. */
+function checkPhoneFree(db: Database, phone: string | undefined, exceptId?: string) {
+  const key = phoneKey(phone);
+  if (key && db.users.some((u) => u.id !== exceptId && phoneKey(u.phone) === key)) {
+    throw new HttpError(409, "Phone number already in use by another person");
+  }
+}
+
+function checkCanSignIn(role: Role, email: string, phone: string | undefined) {
+  if (role === "parent" && !email && !phone) throw new HttpError(400, "Parents need an email or a phone number to sign in");
+}
+
+/** Find the account for a sign-in name (email or phone number). */
+export function findBySignInName(db: Database, identifier: string): User | undefined {
+  const id = identifier.trim().toLowerCase();
+  if (!id) return undefined;
+  if (id.includes("@")) return db.users.find((u) => u.email && u.email.toLowerCase() === id);
+  const key = phoneKey(id);
+  return key ? db.users.find((u) => phoneKey(u.phone) === key) : undefined;
 }
 
 /** Validate class/children links for a role. */
@@ -76,13 +102,22 @@ export interface PersonInput {
   childIds?: unknown;
 }
 
-export function createPerson(db: Database, input: PersonInput, newId: () => string): User {
+/**
+ * A precomputed temporary password (bulk import hashes them in parallel up
+ * front), or "dry-run" to skip hashing when previewing.
+ */
+export type Credentials = { password: string; hash: string } | "dry-run";
+
+export function createPerson(db: Database, input: PersonInput, newId: () => string, credentials?: Credentials): User {
   const name = typeof input.name === "string" ? input.name.trim() : "";
   if (!name) throw new HttpError(400, "Name is required");
   if (!(ROLES as readonly string[]).includes(String(input.role))) throw new HttpError(400, "Invalid role");
   const role = input.role as Role;
-  const email = normalizeEmail(input.email);
+  const email = normalizeEmail(input.email, role);
   checkEmailFree(db, email);
+  const phone = normalizePhone(input.phone);
+  checkPhoneFree(db, phone);
+  checkCanSignIn(role, email, phone);
   const classIds = uniq(input.classIds);
   const childIds = uniq(input.childIds);
   checkLinks(db, role, classIds, childIds);
@@ -93,12 +128,20 @@ export function createPerson(db: Database, input: PersonInput, newId: () => stri
     email,
     role,
     passwordHash: "",
-    phone: normalizePhone(input.phone),
+    phone,
     classIds,
     childIds,
   };
   // The director picks a temporary password; the person must replace it.
-  setPassword(user, String(input.password ?? ""), { mustChange: true });
+  if (credentials === "dry-run") {
+    user.mustChangePassword = true;
+  } else if (credentials) {
+    validateNewPassword(credentials.password);
+    user.passwordHash = credentials.hash;
+    user.mustChangePassword = true;
+  } else {
+    setPassword(user, String(input.password ?? ""), { mustChange: true });
+  }
   user.sessionVersion = 0;
   db.users.push(user);
   if (role === "teacher") syncClassTeachers(db, user);
@@ -115,11 +158,16 @@ export function updatePerson(db: Database, id: string, input: PersonInput): User
     user.name = name;
   }
   if (input.email !== undefined) {
-    const email = normalizeEmail(input.email);
+    const email = normalizeEmail(input.email, user.role);
     checkEmailFree(db, email, id);
     user.email = email;
   }
-  if (input.phone !== undefined) user.phone = normalizePhone(input.phone);
+  if (input.phone !== undefined) {
+    const phone = normalizePhone(input.phone);
+    checkPhoneFree(db, phone, id);
+    user.phone = phone;
+  }
+  checkCanSignIn(user.role, user.email, user.phone);
 
   const classIds = input.classIds !== undefined ? uniq(input.classIds) : user.classIds;
   const childIds = input.childIds !== undefined ? uniq(input.childIds) : user.childIds;

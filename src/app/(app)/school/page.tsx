@@ -1,6 +1,7 @@
 import { formatDate } from "@/components/AnnouncementCard";
 import { requireUser, toPublic } from "@/lib/auth";
 import { readDb } from "@/lib/db";
+import ImportCard from "./ImportCard";
 import PeopleTable from "./PeopleTable";
 import SchoolForms, { DeleteEventButton } from "./SchoolForms";
 
@@ -19,6 +20,8 @@ export default async function SchoolPage() {
           <p>Manage classes, people and the school calendar. Add classes and teachers first, then students, then parents.</p>
         </div>
       </div>
+
+      <ImportCard />
 
       <SchoolForms
         classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}

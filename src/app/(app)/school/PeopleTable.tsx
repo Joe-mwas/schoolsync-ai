@@ -97,7 +97,7 @@ export default function PeopleTable({
                     {p.mustChangePassword && <div className="small muted">Temporary password</div>}
                   </td>
                   <td>{ROLE_LABELS[p.role]}</td>
-                  <td className="small">{p.email}</td>
+                  <td className="small">{p.email || "—"}</td>
                   <td className="small">{p.phone ?? "—"}</td>
                   <td className="small">
                     {p.role === "parent"
@@ -164,7 +164,10 @@ function EditPerson({
     <form className="stack" onSubmit={save} style={{ background: "var(--surface-2)", padding: "0.75rem", borderRadius: 8 }}>
       <div className="grid grid-3">
         <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
-        <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+        <label>
+          Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "director" || person.role === "teacher"} />
+        </label>
         <label>WhatsApp phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2547…" /></label>
       </div>
       {person.role === "student" && (

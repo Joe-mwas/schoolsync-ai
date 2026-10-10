@@ -14,8 +14,9 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **AI assistant** | Everyone | Streaming chat that answers questions from the announcements and events *that user is allowed to see*. |
 | **WhatsApp** | Directors & teachers | Broadcast an announcement to every audience member with a phone number. Inbound WhatsApp messages from registered numbers get an AI reply grounded in that person's school info. Full message log and an inbound-message simulator for testing. |
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
+| **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
 | **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
-| **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
+| **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Staff sign in with email; parents and students can sign in with email or phone number. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
 ## Quick start
 
@@ -51,6 +52,7 @@ All settings are environment variables (see `.env.example`):
 | `WHATSAPP_VERIFY_TOKEN` | For the webhook | Token Meta sends during webhook verification. |
 | `WHATSAPP_APP_SECRET` | For the webhook in production | Verifies `X-Hub-Signature-256` on incoming webhooks. Required in production. |
 | `WHATSAPP_TEMPLATE_NAME`, `WHATSAPP_TEMPLATE_LANGUAGE` | For reaching every parent | Approved template used for announcements to people outside the 24-hour window (language defaults to `en`). |
+| `DEFAULT_COUNTRY_CODE` | Recommended | Country code (e.g. `254`) used to convert local phone numbers like `0712 345 678` to international form, so parents can sign in with either. |
 | `DATA_FILE` | No | Path of the JSON datastore (default `data/db.json`). |
 | `SHOW_DEMO_ACCOUNTS` | No | Set to `1` to show demo-login buttons in production. |
 
@@ -102,6 +104,8 @@ src/
     permissions.ts                      who can see / post / manage what
     users.ts                            creating, editing and removing people; password rules
     rateLimit.ts                        failed sign-in lockout
+    importer.ts, importFormat.ts        CSV class-list import
+    phone.ts                            phone number normalisation
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests
