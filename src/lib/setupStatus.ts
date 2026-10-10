@@ -66,6 +66,15 @@ export function setupChecklist(env: Env, facts: SetupFacts): SetupSection[] {
         : { status: "warn", detail: "Not set, so parents must type numbers with the country code (+254…). Set it to 254 for Kenya." }),
     },
     {
+      id: "school-name",
+      label: "School name",
+      envVar: "SCHOOL_NAME",
+      recommended: true,
+      ...(has(env, "SCHOOL_NAME")
+        ? { status: "ok", detail: `"${env.SCHOOL_NAME!.trim()}" appears in briefs and WhatsApp announcements.` }
+        : { status: "optional", detail: 'Shown at the top of the director\'s brief and at the end of WhatsApp announcements (otherwise "SchoolSync").' }),
+    },
+    {
       id: "demo-accounts",
       label: "No public demo accounts",
       ...(production && (env.SEED_DEMO === "1" || env.SHOW_DEMO_ACCOUNTS === "1")

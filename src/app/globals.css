@@ -174,6 +174,6 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
   .nav { flex-direction: row; flex-wrap: wrap; }
   .user-card { margin-top: 0; margin-left: auto; }
   .main { padding: 1.25rem 16px; }
-  .grid-2, .grid-3, .grid-4, .designer { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4, .designer, .wa-inbox { grid-template-columns: 1fr !important; }
   .bubble { max-width: 92%; }
 }

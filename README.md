@@ -16,6 +16,10 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
 | **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
 | **Backups** | Directors | A compressed backup is saved automatically each day there are changes, and before every spreadsheet import and every restore (14 daily and 20 other backups kept). Directors can back up now, download any backup or the current data, and restore from a listed backup or an uploaded file. A restore that would lock out the director doing it is refused. |
+| **WhatsApp hub** | Everyone | Parents message the school and get a menu: **1** results, **2** fee balance, **3** events, **4** ask a question (Swahili keywords such as *matokeo*, *karo*, *ada* also work). Menu answers come straight from the records, so they're instant and work without the AI; typed questions go to the AI, which sees only that parent's own children's records. Teachers get their classes' latest results; learners their own. The WhatsApp page shows every conversation as a chat thread, with a box to test as any contact. |
+| **Director's brief** | Administrator, directors | Send "brief" (since the last one), "brief today", "brief this week" or "brief this month" on WhatsApp, or use **Brief me** on the dashboard: fees collected and outstanding by class, latest CBC results by class with learners needing support, what parents asked about (grouped into themes by the AI) and anything unanswered, upcoming events, flagged AI answers, and suggested actions. Without the AI, the same figures are sent as a plain report. |
+| **Results (CBC)** | Teachers, directors | EE / ME / AE / BE (and EE1–BE2) per learning area plus a teacher's comment, entered in a class grid or uploaded from a spreadsheet (one column per learning area). Teachers can only record results for their own classes. |
+| **Fees** | Administrator, directors | Every learner's balance, a statement per learner, recording payments (M-Pesa references can't be entered twice) and charges, setting a term fee for a whole class, and uploading totals from a fees spreadsheet. Parents see their balance on WhatsApp and on their dashboard. |
 | **Roles** | Everyone | **Administrator** (the system owner, created from `ADMIN_EMAIL`): everything a director can do, plus Setup, AI Review and managing administrator accounts. **Director**: runs the school (people, classes, announcements, WhatsApp, backups). **Teacher**, **parent**, **student** as below. |
 | **AI Review** | Administrator | Every question asked to the AI (assistant chat, WhatsApp replies, Draft with AI) with the answer it gave; mark answers as right or flag them as wrong with a note; filter by unreviewed, flagged, source or text. The last 5,000 conversations are kept, and the assistant page tells users conversations may be reviewed. |
 | **Setup page** | Administrator | A checklist of every setting (basics, Claude, WhatsApp) showing what's ready or missing and where to find each value, the webhook address to copy into Meta, and buttons to test the Claude key, the WhatsApp token/number, the webhook, and a real test message. |
@@ -57,6 +61,8 @@ All settings are environment variables (see `.env.example`):
 | `WHATSAPP_APP_SECRET` | For the webhook in production | Verifies `X-Hub-Signature-256` on incoming webhooks. Required in production. |
 | `WHATSAPP_TEMPLATE_NAME`, `WHATSAPP_TEMPLATE_LANGUAGE` | For reaching every parent | Approved template used for announcements to people outside the 24-hour window (language defaults to `en`). |
 | `DEFAULT_COUNTRY_CODE` | Recommended | Country code (e.g. `254`) used to convert local phone numbers like `0712 345 678` to international form, so parents can sign in with either. |
+| `SCHOOL_NAME` | Recommended | Shown at the top of the director's brief and at the end of WhatsApp announcements. |
+| `CURRENCY_LABEL` | No | Shown before amounts (default `Ksh`). |
 | `DATA_FILE` | No | Path of the JSON datastore (default `data/db.json`). |
 | `PUBLIC_URL` | No | The site's public address, used by the Setup page's webhook test. On Render, `RENDER_EXTERNAL_URL` is used automatically. |
 | `SHOW_DEMO_ACCOUNTS` | No | Set to `1` to show demo-login buttons in production. |
@@ -112,6 +118,8 @@ src/
     importer.ts, importFormat.ts        CSV class-list import
     phone.ts                            phone number normalisation
     backup.ts                           snapshots, retention, restore validation
+    hub.ts, brief.ts                    WhatsApp menu routing and the director's brief
+    results.ts, cbc.ts, fees.ts         CBC results and fee statements
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests

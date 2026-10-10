@@ -1,12 +1,34 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { templateConfig, whatsappConfigured } from "@/lib/whatsapp";
+import Link from "next/link";
+import { ROLE_LABELS } from "@/lib/permissions";
+import { phoneKey } from "@/lib/phone";
 import Simulator from "./Simulator";
+import ThreadComposer from "./ThreadComposer";
+import ScrollToBottom from "@/components/ScrollToBottom";
+import WaText from "@/components/WaText";
 import { LEADERS } from "@/lib/types";
 
-export default async function WhatsAppPage() {
+export default async function WhatsAppPage({ searchParams }: { searchParams: Promise<{ phone?: string }> }) {
   await requireUser(LEADERS);
   const db = await readDb();
+  const sp = await searchParams;
+
+  // Conversations: one thread per phone number, most recent first.
+  const threads = new Map<string, { phone: string; last: (typeof db.whatsappMessages)[number]; count: number }>();
+  for (const m of db.whatsappMessages) {
+    const t = threads.get(m.phone);
+    if (!t || t.last.createdAt < m.createdAt) threads.set(m.phone, { phone: m.phone, last: m, count: (t?.count ?? 0) + 1 });
+    else t.count++;
+  }
+  const threadList = [...threads.values()].sort((a, b) => b.last.createdAt.localeCompare(a.last.createdAt));
+  const contactFor = (phone: string) => db.users.find((u) => u.phone && phoneKey(u.phone) === phone);
+  const selectedPhone = sp.phone && threads.has(sp.phone) ? sp.phone : threadList[0]?.phone;
+  const thread = selectedPhone
+    ? db.whatsappMessages.filter((m) => m.phone === selectedPhone).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-60)
+    : [];
+  const selectedContact = selectedPhone ? contactFor(selectedPhone) : undefined;
   const names = new Map(db.users.map((u) => [u.id, u.name]));
   const messages = [...db.whatsappMessages].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 200);
   const live = whatsappConfigured();
@@ -17,7 +39,7 @@ export default async function WhatsAppPage() {
       <div className="page-header">
         <div>
           <h1>WhatsApp</h1>
-          <p>Broadcast log and AI auto-replies to parents and staff.</p>
+          <p>The school&apos;s WhatsApp hub: conversations with parents and staff, announcements, and automatic replies.</p>
         </div>
         <span className={`badge ${live ? "ok" : "urgent"}`}>{live ? "Live — Cloud API connected" : "Simulation mode"}</span>
       </div>
@@ -58,6 +80,50 @@ export default async function WhatsAppPage() {
             </li>
           </ol>
         </details>
+      </div>
+
+      <div className="card stack">
+        <h2>Conversations</h2>
+        {threadList.length === 0 ? (
+          <p className="muted small">No conversations yet. Messages from parents and staff will appear here; use the test box below to try it.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(200px, 280px) 1fr", gap: "1rem" }} className="wa-inbox">
+            <ul className="list" style={{ maxHeight: 520, overflowY: "auto" }}>
+              {threadList.map((t) => {
+                const c = contactFor(t.phone);
+                return (
+                  <li key={t.phone} style={t.phone === selectedPhone ? { background: "var(--surface-2)", borderRadius: 8, padding: "0.6rem" } : { padding: "0.6rem" }}>
+                    <Link href={`/whatsapp?phone=${t.phone}`} style={{ color: "inherit", display: "block" }}>
+                      <strong>{c?.name ?? `+${t.phone}`}</strong>
+                      <span className="small muted"> · {c ? ROLE_LABELS[c.role] : "Unknown"}</span>
+                      <div className="small muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {t.last.direction === "outbound" ? "You: " : ""}{t.last.body.split("\n")[0]}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="stack" style={{ minWidth: 0 }}>
+              <div className="small">
+                <strong>{selectedContact?.name ?? `+${selectedPhone}`}</strong>
+                <span className="muted"> · +{selectedPhone}{selectedContact ? ` · ${ROLE_LABELS[selectedContact.role]}` : " · not registered"}</span>
+              </div>
+              <ScrollToBottom className="chat-log" style={{ maxHeight: 420, background: "var(--surface-2)", borderRadius: 10, padding: "0.75rem" }}>
+                {thread.map((m) => (
+                  <div key={m.id} className={`bubble ${m.direction === "inbound" ? "assistant" : "user"}`} style={m.direction === "inbound" ? { background: "var(--surface)" } : undefined}>
+                    <WaText text={m.body} />
+                    <div className="small" style={{ opacity: 0.7, marginTop: 4, fontSize: "0.72rem" }}>
+                      {new Date(m.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      {m.direction === "outbound" ? ` · ${m.status}${m.kind === "template" ? " · template" : ""}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </ScrollToBottom>
+              {selectedPhone && selectedContact && <ThreadComposer phone={selectedPhone} name={selectedContact.name.split(" ")[0]} />}
+            </div>
+          </div>
+        )}
       </div>
 
       <Simulator phones={db.users.filter((u) => u.phone).map((u) => ({ phone: u.phone!, label: `${u.name} (${u.role})` }))} />

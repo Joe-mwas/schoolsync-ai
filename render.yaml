@@ -26,6 +26,9 @@ services:
       # Turns local numbers like 0712 345 678 into +254712345678; change for other countries
       - key: DEFAULT_COUNTRY_CODE
         value: "254"
+      # Shown in the director's brief and at the end of WhatsApp announcements
+      - key: SCHOOL_NAME
+        sync: false
       # Administrator (system owner) account created on first start
       - key: ADMIN_NAME
         sync: false

@@ -103,3 +103,14 @@ test("WhatsApp end to end without the AI: menu, fees, brief", async () => {
   assert.match(brief.body, /brief — today[\s\S]*FEES[\s\S]*RESULTS[\s\S]*PARENTS[\s\S]*EVENTS/);
   assert.ok((await readDb()).users.find((x) => x.id === "u-director")!.lastBriefAt, "last brief time saved");
 });
+
+test("WhatsApp formatting is understood for the website", async () => {
+  const { waSegments } = await import("../src/lib/waFormat.ts");
+  assert.deepEqual(waSegments("*Fees*\nKsh 5,000 _due_ 2*3"), [
+    { text: "Fees", style: "bold" },
+    { text: "\nKsh 5,000 ", style: "plain" },
+    { text: "due", style: "italic" },
+    { text: " 2*3", style: "plain" },
+  ]);
+  assert.deepEqual(waSegments("no formatting"), [{ text: "no formatting", style: "plain" }]);
+});

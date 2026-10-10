@@ -14,7 +14,9 @@ test("a fresh production deploy shows what's missing", () => {
   const env = { NODE_ENV: "production", SESSION_SECRET: "x".repeat(32), DATA_FILE: "/var/data/db.json", DEFAULT_COUNTRY_CODE: "254" };
   const sections = setupChecklist(env, { lastBackupAt: "2026-10-10T08:00:00Z", now: NOW });
   assert.deepEqual(sections.map((s) => s.id), ["basics", "ai", "whatsapp"]);
-  assert.ok(sections[0].items.every((i) => i.status === "ok"), "basics all ready");
+  assert.ok(sections[0].items.filter((i) => !i.recommended).every((i) => i.status === "ok"), "required basics all ready");
+  assert.equal(status(env, "school-name"), "optional");
+  assert.equal(status({ ...env, SCHOOL_NAME: "Sunrise Academy" }, "school-name"), "ok");
   assert.equal(status(env, "anthropic-key"), "missing");
   assert.equal(status(env, "whatsapp_token"), "missing");
   assert.equal(status(env, "whatsapp_template_name"), "optional");
