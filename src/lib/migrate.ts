@@ -6,9 +6,11 @@ import type { Database } from "./types.ts";
  */
 export function migrateDatabase(db: Database, env: Record<string, string | undefined> = process.env): boolean {
   let changed = false;
-  if (!Array.isArray(db.aiLogs)) {
-    db.aiLogs = [];
-    changed = true;
+  for (const key of ["aiLogs", "results", "resultComments", "fees"] as const) {
+    if (!Array.isArray(db[key])) {
+      (db as unknown as Record<string, unknown[]>)[key] = [];
+      changed = true;
+    }
   }
   // Before the administrator role existed, the account created from
   // ADMIN_EMAIL was a director; it becomes the administrator.

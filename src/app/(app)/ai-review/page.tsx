@@ -7,7 +7,7 @@ import type { AiChannel } from "@/lib/types";
 import ReviewActions from "./ReviewActions";
 
 const PAGE_SIZE = 30;
-const CHANNELS: Record<AiChannel, string> = { assistant: "AI Assistant", whatsapp: "WhatsApp reply", draft: "Draft with AI" };
+const CHANNELS: Record<AiChannel, string> = { assistant: "AI Assistant", whatsapp: "WhatsApp reply", draft: "Draft with AI", brief: "Director's brief" };
 
 type Search = { show?: string; channel?: string; q?: string; page?: string };
 

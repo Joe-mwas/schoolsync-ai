@@ -27,6 +27,9 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     posters: [],
     whatsappMessages: [],
     aiLogs: [],
+    results: [],
+    resultComments: [],
+    fees: [],
   };
 }
 
@@ -97,5 +100,38 @@ export function seedDatabase(): Database {
     posters: [],
     whatsappMessages: [],
     aiLogs: [],
+    results: [
+      ...demoResults("u-student1", { English: "ME", Kiswahili: "AE", Mathematics: "EE", "Integrated Science": "ME", "Social Studies": "ME" }),
+      ...demoResults("u-student2", { English: "EE", Kiswahili: "ME", Mathematics: "AE", "Integrated Science": "BE", "Social Studies": "ME" }),
+    ],
+    resultComments: [
+      { studentId: "u-student1", exam: DEMO_EXAM, comment: "Brian is confident in Mathematics; more Kiswahili reading at home will help.", updatedAt: iso(-2) },
+      { studentId: "u-student2", exam: DEMO_EXAM, comment: "Faith expresses herself very well. Needs support in Integrated Science practicals.", updatedAt: iso(-2) },
+    ],
+    fees: [
+      demoFee("f-1", "u-student1", "charge", 15000, iso(-30), null),
+      demoFee("f-2", "u-student1", "payment", 10000, iso(-20), "QK7H2LM9XA"),
+      demoFee("f-3", "u-student2", "charge", 15000, iso(-30), null),
+      demoFee("f-4", "u-student2", "payment", 15000, iso(-25), "QK1B8NN3PZ"),
+    ],
   };
+}
+
+const DEMO_EXAM = "Term 3 2026 Mid-term";
+const DEMO_TERM = "Term 3 2026";
+
+function demoResults(studentId: string, levels: Record<string, string>): Database["results"] {
+  return Object.entries(levels).map(([area, level], i) => ({
+    id: `r-${studentId}-${i}`,
+    studentId,
+    exam: DEMO_EXAM,
+    area,
+    level,
+    updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    updatedBy: null,
+  }));
+}
+
+function demoFee(id: string, studentId: string, kind: "charge" | "payment", amount: number, at: string, reference: string | null): Database["fees"][number] {
+  return { id, studentId, term: DEMO_TERM, kind, amount, date: at.slice(0, 10), reference, note: null, source: "manual", createdBy: null, createdAt: at };
 }

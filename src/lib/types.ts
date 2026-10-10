@@ -25,6 +25,8 @@ export interface User {
   mustChangePassword?: boolean;
   /** Incremented on password change/reset to sign out existing sessions. */
   sessionVersion?: number;
+  /** When this leader last received a brief (the default start of the next one). */
+  lastBriefAt?: string | null;
 }
 
 export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
@@ -94,7 +96,7 @@ export interface WhatsAppMessage {
   providerMessageId?: string | null;
 }
 
-export type AiChannel = "assistant" | "whatsapp" | "draft";
+export type AiChannel = "assistant" | "whatsapp" | "draft" | "brief";
 
 /** One question to the AI and its answer, kept so the administrator can review them. */
 export interface AiLogEntry {
@@ -109,6 +111,43 @@ export interface AiLogEntry {
   reviewedAt?: string | null;
 }
 
+/** One CBC learning-area level for one learner in one exam/assessment. */
+export interface ResultEntry {
+  id: string;
+  studentId: string;
+  exam: string;
+  area: string;
+  /** EE, ME, AE or BE, optionally with a sub-level (EE1, EE2, …). */
+  level: string;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+/** The teacher's overall comment for one learner in one exam. */
+export interface ResultComment {
+  studentId: string;
+  exam: string;
+  comment: string;
+  updatedAt: string;
+}
+
+export type FeeSource = "manual" | "class-charge" | "import";
+
+/** A fee charge or payment on a learner's statement (amounts in whole shillings). */
+export interface FeeEntry {
+  id: string;
+  studentId: string;
+  term: string;
+  kind: "charge" | "payment";
+  amount: number;
+  date: string;
+  reference: string | null;
+  note: string | null;
+  source: FeeSource;
+  createdBy: string | null;
+  createdAt: string;
+}
+
 export interface Database {
   users: User[];
   classes: SchoolClass[];
@@ -117,4 +156,7 @@ export interface Database {
   posters: Poster[];
   whatsappMessages: WhatsAppMessage[];
   aiLogs: AiLogEntry[];
+  results: ResultEntry[];
+  resultComments: ResultComment[];
+  fees: FeeEntry[];
 }

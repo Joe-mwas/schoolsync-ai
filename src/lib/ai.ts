@@ -1,5 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { briefData, formatBrief, type BriefData } from "./brief.ts";
+import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
+import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
+import { isLeader } from "./types.ts";
 import type { Database, User } from "./types.ts";
 
 export const MODEL = "claude-opus-5-5";
@@ -25,7 +29,49 @@ Guidelines:
 - Answer from the school information provided below. If the answer is not there, say so and suggest contacting the school office rather than guessing.
 - Only discuss information the current user is allowed to see; it has already been filtered for them.
 - Keep answers concise and warm. Parents often read on WhatsApp, so prefer short paragraphs and plain text.
-- When drafting messages for staff, match the school's tone: polite, clear, and action-oriented, with dates and deadlines stated explicitly.`;
+- When drafting messages for staff, match the school's tone: polite, clear, and action-oriented, with dates and deadlines stated explicitly.
+- For results and fees, use only the figures in <records>. Never estimate or invent a level, amount or date; if it isn't there, say so.
+- CBC levels: EE = Exceeding Expectations, ME = Meeting Expectations, AE = Approaching Expectations, BE = Below Expectations.`;
+
+/**
+ * Results and fees this person is entitled to: parents see their own
+ * children's, learners their own results, teachers their classes' results,
+ * and leaders school-wide totals. Nothing else ever reaches the AI.
+ */
+function recordsFor(user: User, db: Database): string {
+  if (user.role === "parent") {
+    return db.users
+      .filter((u) => user.childIds.includes(u.id) && u.role === "student")
+      .map((k) => `${formatReport(k.name, studentReport(db, k.id))}\n${formatFeeStatement(k.name, feeStatement(db, k.id))}`)
+      .join("\n\n");
+  }
+  if (user.role === "student") return formatReport(user.name, studentReport(db, user.id));
+  if (user.role === "teacher") {
+    return db.classes
+      .filter((c) => user.classIds.includes(c.id))
+      .map((c) => {
+        const ids = db.users.filter((u) => u.role === "student" && u.classIds.includes(c.id)).map((u) => u.id);
+        const exam = examsFor(db, ids)[0];
+        const p = exam ? examPerformance(db, exam).find((x) => x.classId === c.id) : undefined;
+        return p
+          ? `${c.name}, ${exam}: EE ${p.counts.EE}, ME ${p.counts.ME}, AE ${p.counts.AE}, BE ${p.counts.BE}; weakest area ${p.weakestArea}; needing support: ${p.needingSupport.join(", ") || "none"}`
+          : `${c.name}: no results yet`;
+      })
+      .join("\n");
+  }
+  if (isLeader(user.role)) {
+    const f = schoolFees(db, new Date(Date.now() - 7 * 86_400_000).toISOString());
+    const exam = examsFor(db)[0];
+    const perf = exam ? examPerformance(db, exam) : [];
+    return [
+      `Fees: ${formatMoney(f.paid)} collected of ${formatMoney(f.charged)}; ${formatMoney(f.outstanding)} outstanding; ${formatMoney(f.collectedSince)} collected in the last 7 days.`,
+      ...f.byClass.map((c) => `- ${c.className}: ${formatMoney(c.outstanding)} owed by ${c.learnersOwing} learners`),
+      exam ? `Latest results (${exam}):` : "No results yet.",
+      ...perf.map((p) => `- ${p.className}: EE ${p.counts.EE}, ME ${p.counts.ME}, AE ${p.counts.AE}, BE ${p.counts.BE}; weakest ${p.weakestArea}`),
+    ].join("\n");
+  }
+  return "";
+}
 
 /** The per-user slice of school data the assistant may see. */
 export function buildSchoolContext(user: User, db: Database): string {
@@ -55,6 +101,7 @@ export function buildSchoolContext(user: User, db: Database): string {
     `</current_user>`,
     `<announcements>\n${announcements || "(none)"}\n</announcements>`,
     `<upcoming_events>\n${events || "(none)"}\n</upcoming_events>`,
+    `<records>\n${recordsFor(user, db) || "(none)"}\n</records>`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -209,3 +256,55 @@ export async function testAiConnection(): Promise<ConnectionTestResult> {
     return { ok: false, message: "Unexpected error; see the server logs." };
   }
 }
+
+export function schoolName(env: Record<string, string | undefined> = process.env): string {
+  return env.SCHOOL_NAME?.trim() || "SchoolSync";
+}
+
+/**
+ * The director's brief. With the AI, it reads like a short report and groups
+ * what parents asked about into themes; without it (or if the AI fails), the
+ * plain figures are sent instead, so a brief always arrives.
+ */
+export async function writeBrief(db: Database, data: BriefData): Promise<{ text: string; usedAi: boolean }> {
+  const plain = formatBrief(schoolName(), data);
+  if (!aiConfigured()) return { text: plain, usedAi: false };
+  try {
+    const response = await getClient().beta.messages.create({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: [FALLBACK_BETA],
+      fallbacks: "default",
+      output_config: { effort: "medium" },
+      system: [
+        { type: "text", text: BASE_SYSTEM, cache_control: { type: "ephemeral" } },
+        {
+          type: "text",
+          text: `You are writing the director's brief for ${schoolName()}, sent on WhatsApp.
+Use only the facts in <figures> and <parent_messages>; never invent numbers, names or events.
+Structure: a one-line headline of what matters most, then short sections: Fees, Results, Parents, Coming up, and finally "Suggested actions" (2–4 concrete steps).
+For Parents, group the messages into themes (e.g. "3 parents asked about the trip date") and point out anything urgent or unhappy.
+Plain text with WhatsApp formatting only (*bold* for section names), no tables, under 2,500 characters.`,
+        },
+      ],
+      messages: [
+        {
+          role: "user",
+          content: `Write the brief covering ${data.period.label}.\n\n<figures>\n${plain}\n</figures>\n\n<parent_messages>\n${data.parentMessages.samples.map((s) => `- ${s}`).join("\n") || "(none)"}\n</parent_messages>`,
+        },
+      ],
+    });
+    if (response.stop_reason === "refusal") return { text: plain, usedAi: false };
+    const text = response.content
+      .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+    return text ? { text, usedAi: true } : { text: plain, usedAi: false };
+  } catch (err) {
+    console.error("AI brief failed; sending the plain figures", err);
+    return { text: plain, usedAi: false };
+  }
+}
+
+export { briefData };
