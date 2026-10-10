@@ -33,7 +33,7 @@ export default function SchoolForms({ classes, students, teachers }: { classes: 
   async function addPerson(e: React.FormEvent) {
     e.preventDefault();
     const err = await post("/api/users", person);
-    setMsg({ person: err ?? `Added ${person.name}` });
+    setMsg({ person: err ?? `Added ${person.name}. Share the temporary password privately; they will choose their own when they first sign in.` });
     if (!err) {
       setPerson({ name: "", email: "", role: person.role, phone: "", password: "", classId: "", childId: "" });
       router.refresh();
@@ -67,9 +67,12 @@ export default function SchoolForms({ classes, students, teachers }: { classes: 
               <option value="director">Director</option>
             </select>
           </label>
-          <label>Email<input type="email" value={person.email} onChange={p("email")} required /></label>
+          <label>
+            Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
+            <input type="email" value={person.email} onChange={p("email")} required={person.role === "director" || person.role === "teacher"} />
+          </label>
           <label>WhatsApp phone<input value={person.phone} onChange={p("phone")} placeholder="+2547…" /></label>
-          <label>Initial password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>
+          <label>Temporary password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>
           {(person.role === "teacher" || person.role === "student") && (
             <label>
               Class

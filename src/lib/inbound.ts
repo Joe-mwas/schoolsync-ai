@@ -1,7 +1,7 @@
 import { aiConfigured, generateReply } from "./ai.ts";
 import { mutateDb, newId, readDb } from "./db.ts";
 import type { WhatsAppMessage } from "./types.ts";
-import { normalizePhone, sendWhatsAppText } from "./whatsapp.ts";
+import { applyStatusUpdates, normalizePhone, sendWhatsAppText, type StatusUpdate } from "./whatsapp.ts";
 
 const UNKNOWN_SENDER_REPLY =
   "Hello! This number isn't registered with SchoolSync yet. Please contact the school office to link your phone number.";
@@ -51,7 +51,15 @@ export async function handleInboundMessage(from: string, text: string): Promise<
     error: result.status === "failed" ? result.error : null,
     announcementId: null,
     createdAt: new Date().toISOString(),
+    kind: "text",
+    providerMessageId: result.status === "sent" ? result.messageId : null,
   };
   await mutateDb((d) => void d.whatsappMessages.push(outbound));
   return outbound;
+}
+
+/** Record delivery receipts from the webhook against logged messages. */
+export async function handleStatusUpdates(updates: StatusUpdate[]): Promise<void> {
+  if (updates.length === 0) return;
+  await mutateDb((d) => void applyStatusUpdates(d.whatsappMessages, updates));
 }

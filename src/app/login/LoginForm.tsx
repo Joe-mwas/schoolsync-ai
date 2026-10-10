@@ -44,8 +44,8 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
         }}
       >
         <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          Email or phone number
+          <input value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" placeholder="you@example.com or 0712 345 678" />
         </label>
         <label>
           Password

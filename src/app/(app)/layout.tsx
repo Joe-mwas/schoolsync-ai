@@ -1,3 +1,4 @@
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
@@ -10,6 +11,7 @@ const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/posters", label: "Poster Designer", roles: ["director", "teacher"] },
   { href: "/whatsapp", label: "WhatsApp", roles: ["director"] },
   { href: "/school", label: "School Admin", roles: ["director"] },
+  { href: "/account", label: "My account" },
 ];
 
 export const dynamic = "force-dynamic";
@@ -31,7 +33,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        {user.mustChangePassword ? (
+          <div style={{ maxWidth: 560 }}>
+            <ChangePasswordForm required />
+          </div>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }

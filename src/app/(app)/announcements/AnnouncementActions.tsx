@@ -36,11 +36,21 @@ export default function AnnouncementActions({ id, sent }: { id: string; sent: bo
   );
 }
 
-export function summarize(s: { recipients: number; sent: number; simulated: number; failed: number }): string {
+export function summarize(s: {
+  recipients: number;
+  sent: number;
+  simulated: number;
+  failed: number;
+  viaTemplate: number;
+  outsideWindow: number;
+}): string {
   if (s.recipients === 0) return "No recipients with phone numbers.";
   const parts = [];
   if (s.sent) parts.push(`${s.sent} sent`);
   if (s.simulated) parts.push(`${s.simulated} simulated`);
   if (s.failed) parts.push(`${s.failed} failed`);
-  return `WhatsApp: ${parts.join(", ")}`;
+  let out = `WhatsApp: ${parts.join(", ")}`;
+  if (s.viaTemplate) out += ` (${s.viaTemplate} via template)`;
+  if (s.outsideWindow) out += `. ${s.outsideWindow} recipient(s) haven't messaged the school in 24h and no template is set up, so WhatsApp may not deliver to them.`;
+  return out;
 }

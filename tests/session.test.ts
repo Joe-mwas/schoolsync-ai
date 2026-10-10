@@ -12,8 +12,8 @@ test("passwords hash and verify", () => {
 
 test("session tokens round-trip and reject tampering and expiry", () => {
   const now = Date.now();
-  const token = createSessionToken("u-1", now);
-  assert.equal(readSessionToken(token, now), "u-1");
+  const token = createSessionToken("u-1", 3, now);
+  assert.deepEqual(readSessionToken(token, now), { uid: "u-1", version: 3 });
 
   const [payload, sig] = token.split(".");
   const forged = Buffer.from(JSON.stringify({ uid: "u-director", exp: now + 1e9 })).toString("base64url");

@@ -14,7 +14,9 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **AI assistant** | Everyone | Streaming chat that answers questions from the announcements and events *that user is allowed to see*. |
 | **WhatsApp** | Directors & teachers | Broadcast an announcement to every audience member with a phone number. Inbound WhatsApp messages from registered numbers get an AI reply grounded in that person's school info. Full message log and an inbound-message simulator for testing. |
 | **Poster designer** | Directors & teachers | Canvas editor with four templates, custom colours and text; save, download as PNG, and attach to announcements (rendered inline for readers). |
-| **School admin** | Directors | Add people (with roles, classes, children, WhatsApp numbers) and manage the events calendar. |
+| **Spreadsheet import** | Directors | Upload a CSV class list (one row per student, with class and optional parent name/phone/email). Preview shows exactly what will happen per row; missing classes are created, siblings share one parent account, re-importing adds nothing twice, and bad rows are skipped with a reason. Temporary passwords for new accounts are downloaded as a CSV to hand out. |
+| **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
+| **Accounts & security** | Everyone | New and reset accounts get a temporary password that must be changed at first sign-in. Staff sign in with email; parents and students can sign in with email or phone number. Anyone can change their password and WhatsApp number under **My account**; changing or resetting a password signs out the account's other sessions. Repeated failed sign-ins are locked out (5 per account or 20 per IP address in 15 minutes). |
 
 ## Quick start
 
@@ -49,6 +51,8 @@ All settings are environment variables (see `.env.example`):
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | For live WhatsApp | Without them the app runs in **simulation mode**: messages are logged on the WhatsApp page but not sent. |
 | `WHATSAPP_VERIFY_TOKEN` | For the webhook | Token Meta sends during webhook verification. |
 | `WHATSAPP_APP_SECRET` | For the webhook in production | Verifies `X-Hub-Signature-256` on incoming webhooks. Required in production. |
+| `WHATSAPP_TEMPLATE_NAME`, `WHATSAPP_TEMPLATE_LANGUAGE` | For reaching every parent | Approved template used for announcements to people outside the 24-hour window (language defaults to `en`). |
+| `DEFAULT_COUNTRY_CODE` | Recommended | Country code (e.g. `254`) used to convert local phone numbers like `0712 345 678` to international form, so parents can sign in with either. |
 | `DATA_FILE` | No | Path of the JSON datastore (default `data/db.json`). |
 | `SHOW_DEMO_ACCOUNTS` | No | Set to `1` to show demo-login buttons in production. |
 
@@ -58,7 +62,23 @@ All settings are environment variables (see `.env.example`):
 2. Set the webhook URL to `https://<your-host>/api/whatsapp/webhook`, use your `WHATSAPP_VERIFY_TOKEN`, and subscribe to the `messages` field.
 3. Add each parent's and teacher's phone number in **School Admin** (international format, e.g. `+254700000001`).
 
-Meta only delivers free-form text inside the 24-hour customer-service window (i.e. after the recipient has messaged you). For cold broadcasts to parents you need an approved [message template](https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates); `src/lib/whatsapp.ts` is where to add one.
+#### Announcement template
+
+Meta only delivers free-form text inside the 24-hour customer-service window, i.e. to people who messaged the school in the last 24 hours. For everyone else, announcements are sent with an approved [message template](https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates):
+
+1. In WhatsApp Manager, create a **Utility** template named `school_announcement` (English) whose body uses exactly two variables, `{{1}}` for the title and `{{2}}` for the message, for example:
+   ```
+   📢 {{1}}
+
+   {{2}}
+
+   Reply to this message if you have any questions.
+   ```
+2. Once Meta approves it, set `WHATSAPP_TEMPLATE_NAME=school_announcement` (and `WHATSAPP_TEMPLATE_LANGUAGE` if not `en`).
+
+Each broadcast then picks per recipient: free text if they're inside the window, the template otherwise. Line breaks in the message are shown as ` · ` inside the template, because Meta doesn't allow them in variables. Meta may re-categorise the template as Marketing, which changes its price but not how it works.
+
+Subscribe the webhook to `messages` to also receive delivery receipts: the WhatsApp page then shows each message as delivered, read or failed, with Meta's error for failures.
 
 ## AI details
 
@@ -82,6 +102,10 @@ src/
     auth.ts, session.ts, password.ts    cookie sessions + scrypt passwords
     db.ts                               JSON-file datastore with serialized, atomic writes
     permissions.ts                      who can see / post / manage what
+    users.ts                            creating, editing and removing people; password rules
+    rateLimit.ts                        failed sign-in lockout
+    importer.ts, importFormat.ts        CSV class-list import
+    phone.ts                            phone number normalisation
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests
@@ -110,5 +134,7 @@ The repo includes a `render.yaml` Blueprint that creates the web service and a 1
 The Starter instance plus disk costs roughly US$7–8/month. Every push to `main` redeploys automatically; the data on the disk is kept. To use your own domain, add it under the service's **Settings → Custom Domains**.
 
 ## Production notes
+
+The sign-in lockout is kept in server memory, so it resets when the app restarts. That's fine for one instance; with several instances it would need shared storage.
 
 The JSON datastore suits a single school on a single server instance. For multiple instances or larger schools, swap `src/lib/db.ts` for a real database such as Postgres; the rest of the app only uses `readDb` / `mutateDb`.

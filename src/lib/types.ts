@@ -12,9 +12,13 @@ export interface User {
   classIds: string[];
   /** For parents: the student user ids they are responsible for. */
   childIds: string[];
+  /** Set for accounts created or reset by a director; cleared once the user picks their own password. */
+  mustChangePassword?: boolean;
+  /** Incremented on password change/reset to sign out existing sessions. */
+  sessionVersion?: number;
 }
 
-export type PublicUser = Omit<User, "passwordHash">;
+export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
 
 export interface SchoolClass {
   id: string;
@@ -71,10 +75,14 @@ export interface WhatsAppMessage {
   phone: string;
   userId: string | null;
   body: string;
-  status: "sent" | "simulated" | "failed" | "received";
+  status: "sent" | "delivered" | "read" | "simulated" | "failed" | "received";
   error: string | null;
   announcementId: string | null;
   createdAt: string;
+  /** How an outbound message was sent: free text or an approved template. */
+  kind?: "text" | "template";
+  /** Meta's message id (wamid), used to match delivery receipts. */
+  providerMessageId?: string | null;
 }
 
 export interface Database {
