@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { backupDir, dailySnapshotDue, listSnapshots, writeSnapshot, type SnapshotReason } from "./backup.ts";
+import { migrateDatabase } from "./migrate.ts";
 import { initialDatabase } from "./seed.ts";
 import type { Database } from "./types.ts";
 
@@ -27,7 +28,9 @@ const store: Store = (g.__schoolsyncStore ??= { db: null, queue: Promise.resolve
 async function load(): Promise<Database> {
   if (store.db) return store.db;
   try {
-    store.db = JSON.parse(await readFile(dataFile(), "utf8")) as Database;
+    const db = JSON.parse(await readFile(dataFile(), "utf8")) as Database;
+    if (migrateDatabase(db)) await persist(db);
+    store.db = db;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     store.db = initialDatabase();
@@ -95,6 +98,7 @@ export function snapshotDb(reason: SnapshotReason) {
 export function replaceDb(next: Database) {
   const run = store.queue.then(async () => {
     await writeSnapshot(backupDir(dataFile()), await load(), "before-restore");
+    migrateDatabase(next);
     await persist(next);
     store.db = next;
   });

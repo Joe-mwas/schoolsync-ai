@@ -5,17 +5,17 @@ import type { Database } from "./types.ts";
 export const DEMO_PASSWORD = "schoolsync";
 
 /**
- * An empty school with a single director account, used for real deployments
- * so no account ships with a publicly known password.
+ * An empty school with a single administrator account (the system owner),
+ * used for real deployments so no account ships with a publicly known password.
  */
 export function seedProductionDatabase(admin: { name: string; email: string; password: string }): Database {
   return {
     users: [
       {
-        id: "u-director",
+        id: "u-admin",
         name: admin.name,
         email: admin.email.trim().toLowerCase(),
-        role: "director",
+        role: "admin",
         passwordHash: hashPassword(admin.password),
         classIds: [],
         childIds: [],
@@ -26,6 +26,10 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     events: [],
     posters: [],
     whatsappMessages: [],
+    aiLogs: [],
+    results: [],
+    resultComments: [],
+    fees: [],
   };
 }
 
@@ -39,7 +43,7 @@ export function initialDatabase(env: NodeJS.ProcessEnv = process.env): Database 
       "First production start needs ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters) to create the director account, or SEED_DEMO=1 for demo data.",
     );
   }
-  return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "School Director", email, password });
+  return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "Administrator", email, password });
 }
 
 export function seedDatabase(): Database {
@@ -49,6 +53,7 @@ export function seedDatabase(): Database {
 
   return {
     users: [
+      { id: "u-admin", name: "System Administrator", email: "admin@schoolsync.test", role: "admin", passwordHash: pw, classIds: [], childIds: [] },
       { id: "u-director", name: "Grace Wanjiru", email: "director@schoolsync.test", role: "director", passwordHash: pw, phone: "+254700000001", classIds: [], childIds: [] },
       { id: "u-teacher1", name: "Peter Otieno", email: "teacher@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000002", classIds: ["c-grade7"], childIds: [] },
       { id: "u-teacher2", name: "Mary Akinyi", email: "teacher2@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000003", classIds: ["c-grade8"], childIds: [] },
@@ -94,5 +99,39 @@ export function seedDatabase(): Database {
     ],
     posters: [],
     whatsappMessages: [],
+    aiLogs: [],
+    results: [
+      ...demoResults("u-student1", { English: "ME", Kiswahili: "AE", Mathematics: "EE", "Integrated Science": "ME", "Social Studies": "ME" }),
+      ...demoResults("u-student2", { English: "EE", Kiswahili: "ME", Mathematics: "AE", "Integrated Science": "BE", "Social Studies": "ME" }),
+    ],
+    resultComments: [
+      { studentId: "u-student1", exam: DEMO_EXAM, comment: "Brian is confident in Mathematics; more Kiswahili reading at home will help.", updatedAt: iso(-2) },
+      { studentId: "u-student2", exam: DEMO_EXAM, comment: "Faith expresses herself very well. Needs support in Integrated Science practicals.", updatedAt: iso(-2) },
+    ],
+    fees: [
+      demoFee("f-1", "u-student1", "charge", 15000, iso(-30), null),
+      demoFee("f-2", "u-student1", "payment", 10000, iso(-20), "QK7H2LM9XA"),
+      demoFee("f-3", "u-student2", "charge", 15000, iso(-30), null),
+      demoFee("f-4", "u-student2", "payment", 15000, iso(-25), "QK1B8NN3PZ"),
+    ],
   };
+}
+
+const DEMO_EXAM = "Term 3 2026 Mid-term";
+const DEMO_TERM = "Term 3 2026";
+
+function demoResults(studentId: string, levels: Record<string, string>): Database["results"] {
+  return Object.entries(levels).map(([area, level], i) => ({
+    id: `r-${studentId}-${i}`,
+    studentId,
+    exam: DEMO_EXAM,
+    area,
+    level,
+    updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    updatedBy: null,
+  }));
+}
+
+function demoFee(id: string, studentId: string, kind: "charge" | "payment", amount: number, at: string, reference: string | null): Database["fees"][number] {
+  return { id, studentId, term: DEMO_TERM, kind, amount, date: at.slice(0, 10), reference, note: null, source: "manual", createdBy: null, createdAt: at };
 }

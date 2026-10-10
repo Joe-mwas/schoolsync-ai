@@ -2,6 +2,7 @@ import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId, readDb, snapshotDb } from "@/lib/db";
 import { runImport } from "@/lib/importer";
 import { generateTemporaryPassword, hashPassword, hashPasswordAsync } from "@/lib/password";
+import { LEADERS } from "@/lib/types";
 
 const MAX_CSV_CHARS = 1_000_000;
 
@@ -12,7 +13,7 @@ const MAX_CSV_CHARS = 1_000_000;
  */
 export async function POST(req: Request) {
   try {
-    await requireApiUser(["director"]);
+    await requireApiUser(LEADERS);
     const { csv, dryRun } = (await req.json().catch(() => ({}))) as { csv?: string; dryRun?: boolean };
     if (typeof csv !== "string" || !csv.trim()) throw new HttpError(400, "Choose a CSV file to import");
     if (csv.length > MAX_CSV_CHARS) throw new HttpError(400, "That file is too large; split it into smaller files");

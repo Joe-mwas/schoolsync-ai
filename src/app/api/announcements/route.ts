@@ -2,7 +2,7 @@ import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { broadcastAnnouncement } from "@/lib/broadcast";
 import { mutateDb, newId, readDb } from "@/lib/db";
 import { canPublish, canTargetClass, visibleAnnouncements } from "@/lib/permissions";
-import { ROLES, type Announcement, type Role } from "@/lib/types";
+import { AUDIENCE_ROLES, type Announcement, type Role } from "@/lib/types";
 
 export async function GET() {
   try {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const body = input.body?.trim();
     if (!title || !body) throw new HttpError(400, "Title and body are required");
 
-    const audience = (input.audience ?? []).filter((r): r is Role => (ROLES as readonly string[]).includes(r));
+    const audience = (input.audience ?? []).filter((r): r is Role => AUDIENCE_ROLES.includes(r as Role));
     if (audience.length === 0) throw new HttpError(400, "Choose at least one audience");
 
     const classId = input.classId || null;

@@ -1,11 +1,13 @@
 import { errorResponse, requireApiUser, toPublic } from "@/lib/auth";
 import { mutateDb, newId } from "@/lib/db";
-import { createPerson, type PersonInput } from "@/lib/users";
+import { assertCanManage, createPerson, type PersonInput } from "@/lib/users";
+import { LEADERS } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
-    await requireApiUser(["director"]);
+    const actor = await requireApiUser(LEADERS);
     const input = (await req.json().catch(() => ({}))) as PersonInput & { classId?: string; childId?: string };
+    assertCanManage(actor, { role: input.role as string });
     // The add-person form sends a single class/child.
     const user = await mutateDb((db) =>
       createPerson(

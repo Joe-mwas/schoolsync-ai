@@ -1,3 +1,4 @@
+import { schoolName } from "./ai.ts";
 import { mutateDb, newId, readDb } from "./db.ts";
 import { whatsappRecipients } from "./permissions.ts";
 import type { WhatsAppMessage } from "./types.ts";
@@ -41,7 +42,7 @@ export async function broadcastAnnouncement(announcementId: string): Promise<Bro
   if (!a) throw new Error("Announcement not found");
 
   const recipients = whatsappRecipients(a, db);
-  const text = formatAnnouncementForWhatsApp(a);
+  const text = formatAnnouncementForWhatsApp(a, schoolName());
   const template = templateConfig();
   const lastInbound = lastInboundByPhone(db.whatsappMessages);
   const title = a.priority === "urgent" ? `URGENT: ${a.title}` : a.title;

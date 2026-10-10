@@ -27,3 +27,10 @@ export function credentialsCsv(creds: IssuedCredential[]): string {
   for (const c of creds) lines.push([c.name, c.role, c.signIn, c.temporaryPassword, c.note]);
   return "\uFEFF" + lines.map((l) => l.map(esc).join(",")).join("\r\n");
 }
+
+export const RESULTS_TEMPLATE_CSV = [
+  "Student name,Class,English,Kiswahili,Mathematics,Integrated Science,Social Studies,Comment",
+  "Brian Kamau,Grade 7 East,ME,AE,EE,ME,ME,Confident in Mathematics; read more Kiswahili at home",
+].join("\r\n");
+
+export const FEES_TEMPLATE_CSV = ["Student name,Class,Term,Fees,Paid", "Brian Kamau,Grade 7 East,Term 1 2027,15000,10000"].join("\r\n");

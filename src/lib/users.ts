@@ -1,7 +1,7 @@
 import { HttpError } from "./errors.ts";
 import { hashPassword } from "./password.ts";
 import { canonicalPhone, phoneKey } from "./phone.ts";
-import { ROLES, type Database, type Role, type User } from "./types.ts";
+import { isLeader, ROLES, type Database, type Role, type User } from "./types.ts";
 
 export const MIN_PASSWORD_LENGTH = 8;
 
@@ -21,7 +21,7 @@ export function setPassword(user: User, password: string, opts: { mustChange: bo
 }
 
 /** Staff sign in with email; parents and students may use a phone number instead. */
-const EMAIL_REQUIRED: Role[] = ["director", "teacher"];
+const EMAIL_REQUIRED: Role[] = ["admin", "director", "teacher"];
 
 function normalizeEmail(email: unknown, role: Role): string {
   const e = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -182,13 +182,23 @@ export function deletePerson(db: Database, actorId: string, id: string): void {
   const user = db.users.find((u) => u.id === id);
   if (!user) throw new HttpError(404, "Person not found");
   if (id === actorId) throw new HttpError(400, "You can't remove your own account");
-  if (user.role === "director" && db.users.filter((u) => u.role === "director").length <= 1) {
-    throw new HttpError(400, "The school needs at least one director");
+  if (user.role === "admin" && db.users.filter((u) => u.role === "admin").length <= 1) {
+    throw new HttpError(400, "The school needs at least one administrator");
+  }
+  if (isLeader(user.role) && db.users.filter((u) => isLeader(u.role)).length <= 1) {
+    throw new HttpError(400, "The school needs at least one administrator or director");
   }
   db.users = db.users.filter((u) => u.id !== id);
   for (const u of db.users) u.childIds = u.childIds.filter((c) => c !== id);
   if (user.role === "teacher") {
     user.classIds = [];
     syncClassTeachers(db, user);
+  }
+}
+
+/** Directors run the school, but only an administrator manages administrator accounts. */
+export function assertCanManage(actor: Pick<User, "role">, target: { role: Role | string | undefined }): void {
+  if (target.role === "admin" && actor.role !== "admin") {
+    throw new HttpError(403, "Only an administrator can manage administrator accounts");
   }
 }

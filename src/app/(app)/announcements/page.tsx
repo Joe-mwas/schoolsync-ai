@@ -5,6 +5,7 @@ import { readDb } from "@/lib/db";
 import { canManageAnnouncement, canPublish, visibleAnnouncements } from "@/lib/permissions";
 import AnnouncementActions from "./AnnouncementActions";
 import Composer from "./Composer";
+import { isLeader } from "@/lib/types";
 
 export default async function AnnouncementsPage() {
   const user = await requireUser();
@@ -14,12 +15,12 @@ export default async function AnnouncementsPage() {
   const posters = new Map(db.posters.map((p) => [p.id, p]));
   const list = visibleAnnouncements(user, db);
 
-  const classOptions = (user.role === "director" ? db.classes : db.classes.filter((c) => user.classIds.includes(c.id))).map((c) => ({
+  const classOptions = (isLeader(user.role) ? db.classes : db.classes.filter((c) => user.classIds.includes(c.id))).map((c) => ({
     id: c.id,
     name: c.name,
   }));
   const posterOptions = db.posters
-    .filter((p) => user.role === "director" || p.authorId === user.id)
+    .filter((p) => isLeader(user.role) || p.authorId === user.id)
     .map((p) => ({ id: p.id, name: p.name }));
 
   return (

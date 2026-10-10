@@ -6,6 +6,11 @@ import { readDb } from "@/lib/db";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "@/lib/permissions";
 import type { Database, User } from "@/lib/types";
 import { whatsappConfigured } from "@/lib/whatsapp";
+import BriefCard from "@/components/BriefCard";
+import { describeLevel } from "@/lib/cbc";
+import { feeStatement, formatMoney } from "@/lib/fees";
+import { studentReport } from "@/lib/results";
+import { isLeader } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -70,10 +75,23 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         <Stat label="Parents" value={count("parent")} />
         <Stat label="WhatsApp sent (7 days)" value={waWeek} />
       </div>
+      <BriefCard />
+      {user.role === "admin" && (
+        <Link href="/ai-review?show=unreviewed" className="card row" style={{ justifyContent: "space-between", color: "inherit" }}>
+          <span>
+            <strong>AI answers waiting for your review</strong>
+            <span className="small muted"> · {db.aiLogs.filter((l) => l.flagged).length} flagged as wrong</span>
+          </span>
+          <span className="stat-value" style={{ fontSize: "1.4rem" }}>{db.aiLogs.filter((l) => !l.reviewedAt).length} →</span>
+        </Link>
+      )}
       {(!aiConfigured() || !whatsappConfigured()) && (
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}
           {!whatsappConfigured() && <div>WhatsApp is in simulation mode — messages are logged, not sent. Set <code>WHATSAPP_TOKEN</code> and <code>WHATSAPP_PHONE_NUMBER_ID</code> to go live.</div>}
+          <div style={{ marginTop: 6 }}>
+            <Link href="/setup">Open Setup to connect and test →</Link>
+          </div>
         </div>
       )}
       <div className="grid grid-2">
@@ -137,6 +155,48 @@ function TeacherDashboard({ user, db }: { user: User; db: Database }) {
   );
 }
 
+function LearnerCard({ db, learner, showFees }: { db: Database; learner: User; showFees: boolean }) {
+  const report = studentReport(db, learner.id);
+  const fees = showFees ? feeStatement(db, learner.id) : null;
+  return (
+    <div className="card stack">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h2>{learner.name}</h2>
+        {fees && fees.entries.length > 0 && (
+          <span className={`badge ${fees.balance > 0 ? "urgent" : "ok"}`}>
+            {fees.balance > 0 ? `Fee balance ${formatMoney(fees.balance)}` : fees.balance < 0 ? `Credit ${formatMoney(-fees.balance)}` : "Fees fully paid"}
+          </span>
+        )}
+      </div>
+      {report ? (
+        <>
+          <div className="small muted">Latest results: {report.exam}</div>
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                {report.areas.map((a) => (
+                  <tr key={a.area}><td>{a.area}</td><td className="small">{describeLevel(a.level)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {report.comment && <div className="small"><strong>Teacher&apos;s comment:</strong> {report.comment}</div>}
+        </>
+      ) : (
+        <p className="small muted">No results published yet.</p>
+      )}
+      {fees && fees.entries.length > 0 && (
+        <div className="small muted">
+          Fees: {formatMoney(fees.paid)} paid of {formatMoney(fees.charged)}
+          {[...fees.entries].reverse().find((e) => e.kind === "payment") &&
+            ` · last payment ${[...fees.entries].reverse().find((e) => e.kind === "payment")!.date}`}
+        </div>
+      )}
+      <div className="small muted">Tip: message the school on WhatsApp and reply 1 for results{showFees ? " or 2 for fees" : ""}.</div>
+    </div>
+  );
+}
+
 function FamilyDashboard({ user, db }: { user: User; db: Database }) {
   const classes = new Map(db.classes.map((c) => [c.id, c]));
   const children = db.users.filter((u) => user.childIds.includes(u.id));
@@ -153,6 +213,9 @@ function FamilyDashboard({ user, db }: { user: User; db: Database }) {
         <Stat label="Urgent notices" value={urgent} />
         <Stat label="Upcoming events" value={db.events.filter((e) => e.date >= new Date().toISOString().slice(0, 10)).length} />
       </div>
+      {(user.role === "parent" ? children : user.role === "student" ? [user] : []).map((child) => (
+        <LearnerCard key={child.id} db={db} learner={child} showFees={user.role === "parent"} />
+      ))}
       {user.role === "parent" && children.length > 0 && (
         <div className="card">
           <h2>My children</h2>
@@ -198,7 +261,7 @@ export default async function DashboardPage() {
           <p>{ROLE_LABELS[user.role]} dashboard</p>
         </div>
       </div>
-      {user.role === "director" && <DirectorDashboard user={user} db={db} />}
+      {isLeader(user.role) && <DirectorDashboard user={user} db={db} />}
       {user.role === "teacher" && <TeacherDashboard user={user} db={db} />}
       {(user.role === "parent" || user.role === "student") && <FamilyDashboard user={user} db={db} />}
     </div>

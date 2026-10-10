@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const DEMO = [
+  { label: "Administrator", email: "admin@schoolsync.test" },
   { label: "Director", email: "director@schoolsync.test" },
   { label: "Teacher", email: "teacher@schoolsync.test" },
   { label: "Parent", email: "parent@schoolsync.test" },

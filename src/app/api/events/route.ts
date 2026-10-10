@@ -1,10 +1,11 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId } from "@/lib/db";
 import type { SchoolEvent } from "@/lib/types";
+import { LEADERS } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
-    await requireApiUser(["director"]);
+    await requireApiUser(LEADERS);
     const input = (await req.json().catch(() => ({}))) as Partial<SchoolEvent>;
     const title = input.title?.trim();
     const date = input.date?.trim();

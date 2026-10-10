@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { handleInboundMessage, handleStatusUpdates } from "@/lib/inbound";
+import { recordWebhook, SELF_TEST_HEADER } from "@/lib/webhookActivity";
 import {
   checkWebhookVerification,
   parseIncomingMessages,
@@ -11,7 +12,10 @@ import {
 /** Meta's webhook verification handshake. */
 export async function GET(req: Request) {
   const result = checkWebhookVerification(new URL(req.url).searchParams);
-  if (result.ok) return new Response(result.challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+  if (result.ok) {
+    if (!req.headers.get(SELF_TEST_HEADER)) recordWebhook("verified");
+    return new Response(result.challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+  }
   console.warn(`WhatsApp webhook verification failed: ${result.reason}`);
   return new Response("Forbidden", { status: 403 });
 }
@@ -36,6 +40,7 @@ export async function POST(req: Request) {
     return new Response("Bad request", { status: 400 });
   }
 
+  recordWebhook("received");
   // Acknowledge immediately; Meta retries webhooks that respond slowly.
   const messages = parseIncomingMessages(payload);
   const statuses = parseStatusUpdates(payload);
