@@ -135,6 +135,10 @@ The repo includes a `render.yaml` Blueprint that creates the web service and a 1
 
 The Starter instance plus disk costs roughly US$7–8/month. Every push to `main` redeploys automatically; the data on the disk is kept. To use your own domain, add it under the service's **Settings → Custom Domains**.
 
+## Automatic checks
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`: a clean install, `npm run lint`, `npm test` and `npm run build` on Node 22. To stop a failing change from being merged, turn on **Settings → Branches → Add branch protection rule** for `main` with **Require status checks to pass** and select **Type-check, test and build**.
+
 ## Production notes
 
 Backups are stored in a `backups` folder next to the data file (on Render, on the same persistent disk). They protect against mistakes such as a bad import, but not against losing the disk, so download a copy from **School Admin → Backups** regularly and keep it somewhere safe. Backups contain everyone's details and password hashes; treat them as private.
