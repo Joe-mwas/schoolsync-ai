@@ -10,6 +10,7 @@ const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/assistant", label: "AI Assistant" },
   { href: "/results", label: "Results", roles: STAFF },
   { href: "/fees", label: "Fees", roles: LEADERS },
+  { href: "/facts", label: "School facts", roles: LEADERS },
   { href: "/posters", label: "Poster Designer", roles: STAFF },
   { href: "/whatsapp", label: "WhatsApp", roles: LEADERS },
   { href: "/school", label: "School Admin", roles: LEADERS },
