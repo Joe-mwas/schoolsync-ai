@@ -43,11 +43,12 @@ export function updateFact(db: Database, actor: User, id: string, input: FactInp
   return fact;
 }
 
-export function deleteFact(db: Database, id: string): void {
+/** Removes the fact and returns it (so its picture file can be deleted too). */
+export function deleteFact(db: Database, id: string): SchoolFact {
   const idx = db.facts.findIndex((f) => f.id === id);
   if (idx === -1) throw new HttpError(404, "Fact not found");
   for (const l of db.aiLogs) if (l.factId === id) l.factId = null;
-  db.facts.splice(idx, 1);
+  return db.facts.splice(idx, 1)[0];
 }
 
 /** Facts this person may be told: staff-only facts never reach parents or learners. */
@@ -56,15 +57,61 @@ export function factsFor(db: Pick<Database, "facts">, user: Pick<User, "role">):
   return db.facts.filter((f) => f.visibleTo === "everyone" || staff);
 }
 
-/** The facts as the AI sees them, grouped by topic in a stable order. */
-export function factsPrompt(facts: SchoolFact[]): string {
+/**
+ * The facts as the AI sees them, grouped by topic in a stable order. With
+ * `pictures`, facts that have a picture are tagged so the AI can attach it.
+ */
+export function factsPrompt(facts: SchoolFact[], pictures = false): string {
   if (facts.length === 0) return "";
   const lines: string[] = [];
   for (const topic of FACT_TOPICS) {
     const group = facts.filter((f) => f.topic === topic).sort((a, b) => a.title.localeCompare(b.title));
     if (group.length === 0) continue;
     lines.push(`## ${topic}`);
-    for (const f of group) lines.push(`- ${f.title}: ${f.details}`);
+    for (const f of group) lines.push(`- ${f.title}: ${f.details}${pictures && f.image ? ` [picture available: [[picture:${f.id}]]]` : ""}`);
   }
   return lines.join("\n");
+}
+
+const PICTURE_WORDS = /\b(pictures?|photos?|photographs?|pics?|images?|picha|foto|show me|nionyeshe|look like|looks like|inaonekana)\b/i;
+const IGNORED = new Set(["picture", "pictures", "photo", "photos", "photograph", "photographs", "pics", "image", "images", "picha", "foto", "show", "please", "send", "what", "does", "look", "like", "looks", "school", "nionyeshe", "tafadhali", "naomba", "nitumie", "inaonekana", "your", "have", "with", "this", "that", "there", "about"]);
+/** Swahili (and common) words for the things schools usually photograph. */
+const ALIASES: Record<string, string> = { sare: "uniform", uniforms: "uniform", rangi: "uniform", basi: "transport", gari: "transport", bus: "transport", chakula: "meals", lunch: "meals", menu: "meals", ratiba: "term dates", kalenda: "term dates", calendar: "term dates", karo: "fees", ada: "fees", malipo: "fees" };
+
+/**
+ * "Send me a picture of the uniform" → the fact with that picture. Needs a
+ * picture word and a word that names the fact; otherwise null (the AI decides).
+ */
+export function pictureRequest(db: Pick<Database, "facts">, user: Pick<User, "role">, text: string): SchoolFact | null {
+  if (!PICTURE_WORDS.test(text)) return null;
+  const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
+  const wanted = words.filter((w) => w.length >= 3 && !IGNORED.has(w)).flatMap((w) => [w, ...(ALIASES[w] ? [ALIASES[w]] : [])]);
+  let best: SchoolFact | null = null;
+  let bestScore = 0;
+  for (const f of factsFor(db, user)) {
+    if (!f.image) continue;
+    const name = `${f.topic} ${f.title}`.toLowerCase();
+    const score = wanted.filter((w) => name.includes(w) || (w.endsWith("s") && name.includes(w.slice(0, -1)))).length;
+    if (score > bestScore) [best, bestScore] = [f, score];
+  }
+  return best;
+}
+
+/**
+ * Pull the AI's [[picture:fact-id]] markers out of a reply. Only facts this
+ * person may see, that have a picture, are kept.
+ */
+export function extractPictures(db: Pick<Database, "facts">, user: Pick<User, "role">, reply: string): { text: string; facts: SchoolFact[] } {
+  const visible = factsFor(db, user);
+  const facts: SchoolFact[] = [];
+  const text = reply
+    .replace(/\[?\[\[picture:([\w-]+)\]\]\]?/g, (_m, id: string) => {
+      const f = visible.find((x) => x.id === id && x.image);
+      if (f && !facts.includes(f)) facts.push(f);
+      return "";
+    })
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return { text, facts };
 }

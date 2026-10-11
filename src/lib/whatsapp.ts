@@ -201,6 +201,37 @@ export function sendWhatsAppText(to: string, body: string): Promise<SendResult> 
   });
 }
 
+/** WhatsApp captions are limited to 1024 characters. */
+export function buildImagePayload(to: string, mediaId: string, caption: string) {
+  return {
+    messaging_product: "whatsapp",
+    to: normalizePhone(to),
+    type: "image",
+    image: { id: mediaId, ...(caption.trim() ? { caption: caption.trim().slice(0, 1024) } : {}) },
+  };
+}
+
+/** Upload the picture to Meta, then send it with a caption. */
+export async function sendWhatsAppImage(to: string, bytes: Uint8Array, type: string, caption: string): Promise<SendResult> {
+  if (!whatsappConfigured()) return { status: "simulated" };
+  try {
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("type", type);
+    form.append("file", new Blob([new Uint8Array(bytes)], { type }), type === "image/png" ? "picture.png" : "picture.jpg");
+    const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${waEnv("WHATSAPP_PHONE_NUMBER_ID")}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${waEnv("WHATSAPP_TOKEN")}` },
+      body: form,
+    });
+    const data = (await res.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+    if (!res.ok || !data.id) return { status: "failed", error: `Picture upload failed: ${data.error?.message ?? `HTTP ${res.status}`}` };
+    return postMessage(buildImagePayload(to, data.id, caption));
+  } catch (err) {
+    return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export function sendWhatsAppTemplate(to: string, template: TemplateConfig, params: string[]): Promise<SendResult> {
   return postMessage(buildTemplatePayload(to, template, params));
 }

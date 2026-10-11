@@ -90,8 +90,10 @@ export interface WhatsAppMessage {
   error: string | null;
   announcementId: string | null;
   createdAt: string;
-  /** How an outbound message was sent: free text or an approved template. */
-  kind?: "text" | "template";
+  /** How an outbound message was sent: free text, an approved template or a picture. */
+  kind?: "text" | "template" | "image";
+  /** For a picture: the school fact whose picture was sent (the body is its caption). */
+  factId?: string | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -164,6 +166,13 @@ export const FACT_TOPICS = [
 export type FactTopic = (typeof FACT_TOPICS)[number];
 
 /** Something the school has confirmed; the AI treats it as the truth. */
+export interface FactImage {
+  /** File name inside the images folder next to the database. */
+  file: string;
+  type: "image/jpeg" | "image/png";
+  size: number;
+}
+
 export interface SchoolFact {
   id: string;
   topic: FactTopic;
@@ -171,6 +180,8 @@ export interface SchoolFact {
   details: string;
   /** "staff" facts are never shown to parents or learners. */
   visibleTo: "everyone" | "staff";
+  /** Optional picture (e.g. the uniform), sent on WhatsApp when someone asks to see it. */
+  image?: FactImage | null;
   /** The AI Review entry this fact corrected, if any. */
   fromAiLogId: string | null;
   updatedAt: string;

@@ -16,6 +16,68 @@ const STARTERS: { topic: FactTopic; title: string; hint: string }[] = [
   { topic: "Meals", title: "Lunch and meals", hint: "e.g. what's served, cost, packed lunch rules" },
 ];
 
+/** Phone photos are large: shrink to at most 1600px as a JPEG before upload. */
+async function shrink(file: File): Promise<Blob> {
+  const img = await createImageBitmap(file).catch(() => null);
+  if (!img) return file;
+  const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b ?? file), "image/jpeg", 0.85));
+}
+
+/** A fact's picture: sent on WhatsApp when someone asks to see it. */
+function FactPicture({ fact, onError }: { fact: SchoolFact; onError: (text: string) => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    const form = new FormData();
+    form.append("file", await shrink(file), "picture.jpg");
+    const res = await fetch(`/api/facts/${fact.id}/image`, { method: "POST", body: form });
+    setBusy(false);
+    if (!res.ok) return onError((await res.json().catch(() => ({}))).error ?? "Couldn't upload the picture");
+    router.refresh();
+  }
+
+  async function removePicture() {
+    if (!confirm(`Remove the picture from "${fact.title}"?`)) return;
+    await fetch(`/api/facts/${fact.id}/image`, { method: "DELETE" });
+    router.refresh();
+  }
+
+  const picker = (label: string) => (
+    <label className="button secondary small" style={{ margin: 0 }}>
+      {busy ? "Uploading…" : label}
+      <input type="file" accept="image/jpeg,image/png,image/*" onChange={upload} disabled={busy} hidden />
+    </label>
+  );
+
+  if (!fact.image) return <div style={{ marginTop: 6 }}>{picker("🖼 Add a picture")}</div>;
+  return (
+    <div className="row" style={{ marginTop: 8, alignItems: "flex-end" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/api/facts/${fact.id}/image?v=${fact.image.file}`} alt={fact.title} style={{ maxHeight: 140, maxWidth: 220, borderRadius: 8, border: "1px solid var(--border)" }} />
+      <div className="stack" style={{ gap: 4 }}>
+        <span className="small muted">Sent on WhatsApp when someone asks to see it.</span>
+        <div className="row" style={{ gap: 6 }}>
+          {picker("Replace")}
+          <button type="button" className="secondary small" onClick={removePicture}>Remove</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Draft = { id?: string; topic: FactTopic; title: string; details: string; visibleTo: "everyone" | "staff"; fromAiLogId?: string | null };
 
 export default function FactsEditor({ facts, initialDraft, correcting }: { facts: SchoolFact[]; initialDraft: Draft | null; correcting: { question: string; answer: string } | null }) {
@@ -136,6 +198,7 @@ export default function FactsEditor({ facts, initialDraft, correcting }: { facts
                     {f.visibleTo === "staff" && <span className="badge" style={{ marginLeft: 8 }}>Staff only</span>}
                     {f.fromAiLogId && <span className="badge ok" style={{ marginLeft: 8 }}>From AI Review</span>}
                     <div className="small" style={{ whiteSpace: "pre-wrap" }}>{f.details}</div>
+                    <FactPicture fact={f} onError={(text) => setMsg({ ok: false, text })} />
                   </div>
                   <div className="row" style={{ gap: "0.4rem", flexWrap: "nowrap" }}>
                     <button className="secondary small" onClick={() => { setMsg(null); setDraft({ id: f.id, topic: f.topic, title: f.title, details: f.details, visibleTo: f.visibleTo }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Edit</button>

@@ -1,5 +1,6 @@
 import { errorResponse, requireApiUser } from "@/lib/auth";
-import { mutateDb } from "@/lib/db";
+import { dataFile, mutateDb } from "@/lib/db";
+import { deleteFactImage } from "@/lib/factImages";
 import { deleteFact, updateFact, type FactInput } from "@/lib/facts";
 import { LEADERS } from "@/lib/types";
 
@@ -20,7 +21,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     await requireApiUser(LEADERS);
     const { id } = await params;
-    await mutateDb((db) => deleteFact(db, id));
+    const fact = await mutateDb((db) => deleteFact(db, id));
+    await deleteFactImage(dataFile(), fact.image);
     return Response.json({ ok: true });
   } catch (err) {
     return errorResponse(err);

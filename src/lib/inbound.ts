@@ -1,23 +1,31 @@
 import { aiConfigured, briefData, generateReply, writeBrief } from "./ai.ts";
 import { logAiExchange } from "./aiLog.ts";
 import { splitMessage } from "./brief.ts";
-import { mutateDb, newId, readDb } from "./db.ts";
+import { dataFile, mutateDb, newId, readDb } from "./db.ts";
+import { readFactImage } from "./factImages.ts";
+import { extractPictures } from "./facts.ts";
 import { MENU_HINT, routeMessage } from "./hub.ts";
 import { phoneKey } from "./phone.ts";
-import { isLeader, type User, type WhatsAppMessage } from "./types.ts";
-import { applyStatusUpdates, normalizePhone, sendWhatsAppText, type StatusUpdate } from "./whatsapp.ts";
+import { isLeader, type SchoolFact, type User, type WhatsAppMessage } from "./types.ts";
+import { applyStatusUpdates, normalizePhone, sendWhatsAppImage, sendWhatsAppText, type SendResult, type StatusUpdate } from "./whatsapp.ts";
 
 const UNKNOWN_SENDER_REPLY =
   "Hello! This number isn't registered with SchoolSync yet. Please contact the school office to link your phone number.";
 const NO_AI_REPLY = "Thanks for your message. The school office will get back to you soon.";
 
+/** One outgoing WhatsApp message: text, or a fact's picture with the text as caption. */
+type Outgoing = { text: string; picture?: SchoolFact };
+
+const caption = (f: SchoolFact) => `${f.title}: ${f.details}`;
+
 /** Work out the reply (one or more WhatsApp messages) for someone we know. */
-async function replyFor(user: User, text: string): Promise<string[]> {
+async function replyFor(user: User, text: string): Promise<Outgoing[]> {
   const db = await readDb();
   const action = routeMessage(db, user, text);
   const hint = isLeader(user.role) ? "Reply MENU for options." : MENU_HINT;
 
-  if (action.type === "reply") return [action.text];
+  if (action.type === "reply") return [{ text: action.text }];
+  if (action.type === "picture") return [{ text: caption(action.fact), picture: action.fact }];
 
   if (action.type === "brief") {
     const data = briefData(db, action.period);
@@ -27,17 +35,18 @@ async function replyFor(user: User, text: string): Promise<string[]> {
       if (me) me.lastBriefAt = new Date().toISOString();
     });
     if (usedAi) await logAiExchange("brief", user.id, text, brief);
-    return splitMessage(brief);
+    return splitMessage(brief).map((t) => ({ text: t }));
   }
 
-  if (!aiConfigured()) return [`${NO_AI_REPLY}\n\n${hint}`];
+  if (!aiConfigured()) return [{ text: `${NO_AI_REPLY}\n\n${hint}` }];
   try {
-    const answer = (await generateReply(user, db, text)) || NO_AI_REPLY;
-    await logAiExchange("whatsapp", user.id, text, answer);
-    return [`${answer}\n\n${hint}`];
+    const raw = (await generateReply(user, db, text)) || NO_AI_REPLY;
+    const { text: answer, facts } = extractPictures(db, user, raw);
+    await logAiExchange("whatsapp", user.id, text, raw);
+    return [{ text: `${answer || NO_AI_REPLY}\n\n${hint}` }, ...facts.map((f) => ({ text: f.title, picture: f }))];
   } catch (err) {
     console.error("WhatsApp AI reply failed", err);
-    return [`${NO_AI_REPLY}\n\n${hint}`];
+    return [{ text: `${NO_AI_REPLY}\n\n${hint}` }];
   }
 }
 
@@ -64,11 +73,11 @@ export async function handleInboundMessage(from: string, text: string): Promise<
   };
   await mutateDb((d) => void d.whatsappMessages.push(inbound));
 
-  const replies = user ? await replyFor(user, text) : [UNKNOWN_SENDER_REPLY];
+  const replies = user ? await replyFor(user, text) : [{ text: UNKNOWN_SENDER_REPLY }];
 
   let last: WhatsAppMessage | null = null;
-  for (const body of replies) {
-    const result = await sendWhatsAppText(phone, body);
+  for (const { text: body, picture } of replies) {
+    const { result, sentPicture } = await send(phone, body, picture);
     const outbound: WhatsAppMessage = {
       id: newId("wa"),
       direction: "outbound",
@@ -79,13 +88,21 @@ export async function handleInboundMessage(from: string, text: string): Promise<
       error: result.status === "failed" ? result.error : null,
       announcementId: null,
       createdAt: new Date().toISOString(),
-      kind: "text",
+      kind: sentPicture ? "image" : "text",
+      factId: sentPicture ? picture!.id : null,
       providerMessageId: result.status === "sent" ? result.messageId : null,
     };
     await mutateDb((d) => void d.whatsappMessages.push(outbound));
     last = outbound;
   }
   return last!;
+}
+
+/** Send text, or a picture with its caption (falling back to text if the file is gone). */
+async function send(phone: string, body: string, picture?: SchoolFact): Promise<{ result: SendResult; sentPicture: boolean }> {
+  const bytes = picture?.image ? await readFactImage(dataFile(), picture.image) : null;
+  if (picture?.image && bytes) return { result: await sendWhatsAppImage(phone, bytes, picture.image.type, body), sentPicture: true };
+  return { result: await sendWhatsAppText(phone, body), sentPicture: false };
 }
 
 /** Record delivery receipts from the webhook against logged messages. */

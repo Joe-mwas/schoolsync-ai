@@ -109,8 +109,8 @@ export function buildSchoolContext(user: User, db: Database): string {
     .join("\n");
 }
 
-function systemBlocks(context: string, user: User, db: Database): Anthropic.Beta.BetaTextBlockParam[] {
-  const facts = factsPrompt(factsFor(db, user));
+function systemBlocks(context: string, user: User, db: Database, pictures = false): Anthropic.Beta.BetaTextBlockParam[] {
+  const facts = factsPrompt(factsFor(db, user), pictures);
   return [
     // Stable parts first so they can be cached: the instructions, then the
     // school's facts (the same for every parent, and for every staff member).
@@ -157,9 +157,10 @@ export async function generateReply(user: User, db: Database, text: string): Pro
     fallbacks: "default",
     output_config: { effort: "low" },
     system: systemBlocks(
-      `${buildSchoolContext(user, db)}\n\nThis conversation is happening over WhatsApp: reply in plain text (no Markdown), under 120 words.`,
+      `${buildSchoolContext(user, db)}\n\nThis conversation is happening over WhatsApp: reply in plain text (no Markdown), under 120 words. Some school facts have a picture, shown as [[picture:id]]. When the person asks to see something, or the picture clearly helps, put that marker on its own line at the end and the picture will be sent with your reply; never mention the marker itself.`,
       user,
       db,
+      true,
     ),
     messages: [{ role: "user", content: text }],
   });
