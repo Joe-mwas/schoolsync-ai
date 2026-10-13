@@ -90,8 +90,10 @@ export interface WhatsAppMessage {
   error: string | null;
   announcementId: string | null;
   createdAt: string;
-  /** How an outbound message was sent: free text or an approved template. */
-  kind?: "text" | "template";
+  /** How an outbound message was sent: free text, an approved template or a picture. */
+  kind?: "text" | "template" | "image";
+  /** For a picture: the school fact whose picture was sent (the body is its caption). */
+  factId?: string | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -109,6 +111,8 @@ export interface AiLogEntry {
   flagged?: boolean;
   note?: string | null;
   reviewedAt?: string | null;
+  /** Set when this answer was corrected with a school fact. */
+  factId?: string | null;
 }
 
 /** One CBC learning-area level for one learner in one exam/assessment. */
@@ -148,6 +152,42 @@ export interface FeeEntry {
   createdAt: string;
 }
 
+export const FACT_TOPICS = [
+  "Fees and payments",
+  "Uniform",
+  "Term dates",
+  "School hours",
+  "Contacts",
+  "Transport",
+  "Meals",
+  "Policies",
+  "Other",
+] as const;
+export type FactTopic = (typeof FACT_TOPICS)[number];
+
+/** Something the school has confirmed; the AI treats it as the truth. */
+export interface FactImage {
+  /** File name inside the images folder next to the database. */
+  file: string;
+  type: "image/jpeg" | "image/png";
+  size: number;
+}
+
+export interface SchoolFact {
+  id: string;
+  topic: FactTopic;
+  title: string;
+  details: string;
+  /** "staff" facts are never shown to parents or learners. */
+  visibleTo: "everyone" | "staff";
+  /** Optional picture (e.g. the uniform), sent on WhatsApp when someone asks to see it. */
+  image?: FactImage | null;
+  /** The AI Review entry this fact corrected, if any. */
+  fromAiLogId: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
 export interface Database {
   users: User[];
   classes: SchoolClass[];
@@ -159,4 +199,5 @@ export interface Database {
   results: ResultEntry[];
   resultComments: ResultComment[];
   fees: FeeEntry[];
+  facts: SchoolFact[];
 }

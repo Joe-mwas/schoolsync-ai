@@ -21,6 +21,7 @@ Built with Next.js 15 (App Router), React 19 and TypeScript. The AI features use
 | **Results (CBC)** | Teachers, directors | EE / ME / AE / BE (and EE1–BE2) per learning area plus a teacher's comment, entered in a class grid or uploaded from a spreadsheet (one column per learning area). Teachers can only record results for their own classes. |
 | **Fees** | Administrator, directors | Every learner's balance, a statement per learner, recording payments (M-Pesa references can't be entered twice) and charges, setting a term fee for a whole class, and uploading totals from a fees spreadsheet. Parents see their balance on WhatsApp and on their dashboard. |
 | **Roles** | Everyone | **Administrator** (the system owner, created from `ADMIN_EMAIL`): everything a director can do, plus Setup, AI Review and managing administrator accounts. **Director**: runs the school (people, classes, announcements, WhatsApp, backups). **Teacher**, **parent**, **student** as below. |
+| **School facts** | Administrator, directors | Fees and how to pay, uniform, term dates, school hours, contacts, transport, meals and policies, entered once as short facts. Every AI answer (assistant, WhatsApp, Draft with AI) is given these facts and must answer from them instead of guessing. Facts can be staff-only (never shown to parents or learners). In AI Review, **Save as school fact** turns a correction into a fact, so the same mistake isn't made again. A fact can have a **picture** (e.g. the uniform): when someone asks on WhatsApp for a picture or photo of it ("picha ya sare" works too), the picture is sent with the fact as its caption, even without the AI. Pictures are stored in `images/` next to the database (back that folder up with it). |
 | **AI Review** | Administrator | Every question asked to the AI (assistant chat, WhatsApp replies, Draft with AI) with the answer it gave; mark answers as right or flag them as wrong with a note; filter by unreviewed, flagged, source or text. The last 5,000 conversations are kept, and the assistant page tells users conversations may be reviewed. |
 | **Setup page** | Administrator | A checklist of every setting (basics, Claude, WhatsApp) showing what's ready or missing and where to find each value, the webhook address to copy into Meta, and buttons to test the Claude key, the WhatsApp token/number, the webhook, and a real test message. |
 | **School admin** | Directors | Add, search, edit and remove people (roles, classes, children, WhatsApp numbers), reset passwords, create classes and manage the events calendar. |
@@ -120,6 +121,7 @@ src/
     backup.ts                           snapshots, retention, restore validation
     hub.ts, brief.ts                    WhatsApp menu routing and the director's brief
     results.ts, cbc.ts, fees.ts         CBC results and fee statements
+    facts.ts, factImages.ts             School facts, their pictures and how the AI sees them
     whatsapp.ts, inbound.ts, broadcast.ts   Cloud API client, webhook handling, broadcasts
     poster.ts                           poster templates and canvas renderer
 tests/                node:test unit tests

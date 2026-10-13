@@ -11,7 +11,7 @@ import type { Database } from "./types.ts";
  * to a temp file first so a crash can't leave a half-written database.
  */
 
-function dataFile(): string {
+export function dataFile(): string {
   return process.env.DATA_FILE || path.join(process.cwd(), "data", "db.json");
 }
 

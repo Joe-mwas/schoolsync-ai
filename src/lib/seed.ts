@@ -30,6 +30,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     results: [],
     resultComments: [],
     fees: [],
+    facts: [],
   };
 }
 
@@ -114,7 +115,17 @@ export function seedDatabase(): Database {
       demoFee("f-3", "u-student2", "charge", 15000, iso(-30), null),
       demoFee("f-4", "u-student2", "payment", 15000, iso(-25), "QK1B8NN3PZ"),
     ],
+    facts: [
+      demoFact("fact-fees", "Fees and payments", "How to pay school fees", "Pay by M-Pesa Paybill 247247, account number: the learner's full name and class (e.g. BrianKamau-G7E). Cash is not accepted at the school. Term 3 2026 fees are Ksh 15,000 for Grades 7 and 8."),
+      demoFact("fact-uniform", "Uniform", "School uniform", "Red sweater with the school badge, white shirt, grey trousers or skirt, black shoes. Sports days: house T-shirt and track pants. Uniforms are sold at Sunrise Outfitters, Moi Avenue."),
+      demoFact("fact-hours", "School hours", "School day times", "Gates open 7:00 AM. Lessons 7:30 AM to 3:30 PM, Monday to Friday. Clubs and games until 4:30 PM on Wednesdays."),
+      demoFact("fact-staff", "Policies", "Staff meetings", "Staff meeting every Monday at 4:00 PM in the staffroom.", "staff"),
+    ],
   };
+}
+
+function demoFact(id: string, topic: Database["facts"][number]["topic"], title: string, details: string, visibleTo: "everyone" | "staff" = "everyone"): Database["facts"][number] {
+  return { id, topic, title, details, visibleTo, fromAiLogId: null, updatedAt: new Date().toISOString(), updatedBy: null };
 }
 
 const DEMO_EXAM = "Term 3 2026 Mid-term";

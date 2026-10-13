@@ -16,6 +16,7 @@ export default async function AiReviewPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const db = await readDb();
   const users = new Map(db.users.map((u) => [u.id, u]));
+  const factTitles = new Map(db.facts.map((f) => [f.id, f.title]));
   const nameOf = (id: string | null) => (id ? users.get(id)?.name ?? "Removed user" : "Unknown");
 
   const filter: AiLogFilter = {
@@ -47,7 +48,10 @@ export default async function AiReviewPage({ searchParams }: { searchParams: Pro
       <div className="page-header">
         <div>
           <h1>AI Review</h1>
-          <p>Every question asked to the AI and what it answered. Check the answers and flag any that are wrong.</p>
+          <p>
+            Every question asked to the AI and what it answered. Flag wrong answers, then use <strong>Save as school fact</strong> so the AI
+            gets it right from then on.
+          </p>
         </div>
       </div>
 
@@ -107,7 +111,16 @@ export default async function AiReviewPage({ searchParams }: { searchParams: Pro
             <div className="bubble user" style={{ maxWidth: "100%", alignSelf: "flex-start" }}>{l.question}</div>
             <div className="bubble assistant" style={{ maxWidth: "100%" }}>{l.answer}</div>
             {l.flagged && l.note && <div className="small"><strong>Your note:</strong> {l.note}</div>}
-            <ReviewActions id={l.id} flagged={Boolean(l.flagged)} reviewed={Boolean(l.reviewedAt)} />
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <ReviewActions id={l.id} flagged={Boolean(l.flagged)} reviewed={Boolean(l.reviewedAt)} />
+              {l.factId && factTitles.has(l.factId) ? (
+                <Link href="/facts" className="small">✓ Corrected with the fact &quot;{factTitles.get(l.factId)}&quot;</Link>
+              ) : (
+                (l.flagged || l.channel !== "brief") && (
+                  <Link href={`/facts?fromLog=${l.id}`} className={`button small ${l.flagged ? "" : "secondary"}`}>Save as school fact</Link>
+                )
+              )}
+            </div>
           </article>
         );
       })}

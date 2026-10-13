@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
+import { factsFor, factsPrompt } from "./facts.ts";
 import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
@@ -30,6 +31,7 @@ Guidelines:
 - Only discuss information the current user is allowed to see; it has already been filtered for them.
 - Keep answers concise and warm. Parents often read on WhatsApp, so prefer short paragraphs and plain text.
 - When drafting messages for staff, match the school's tone: polite, clear, and action-oriented, with dates and deadlines stated explicitly.
+- <school_facts> are confirmed by the school itself. They override anything else you know or assume; when a question is covered by a fact, answer from it.
 - For results and fees, use only the figures in <records>. Never estimate or invent a level, amount or date; if it isn't there, say so.
 - CBC levels: EE = Exceeding Expectations, ME = Meeting Expectations, AE = Approaching Expectations, BE = Below Expectations.`;
 
@@ -107,10 +109,13 @@ export function buildSchoolContext(user: User, db: Database): string {
     .join("\n");
 }
 
-function systemBlocks(context: string): Anthropic.Beta.BetaTextBlockParam[] {
+function systemBlocks(context: string, user: User, db: Database, pictures = false): Anthropic.Beta.BetaTextBlockParam[] {
+  const facts = factsPrompt(factsFor(db, user), pictures);
   return [
-    // Stable instructions first so they can be cached across users.
+    // Stable parts first so they can be cached: the instructions, then the
+    // school's facts (the same for every parent, and for every staff member).
     { type: "text", text: BASE_SYSTEM, cache_control: { type: "ephemeral" } },
+    ...(facts ? [{ type: "text" as const, text: `<school_facts>\n${facts}\n</school_facts>`, cache_control: { type: "ephemeral" as const } }] : []),
     { type: "text", text: `Today's date: ${new Date().toISOString().slice(0, 10)}\n\n${context}` },
   ];
 }
@@ -127,7 +132,7 @@ export async function* streamAssistantReply(
     betas: [FALLBACK_BETA],
     fallbacks: "default",
     output_config: { effort: "low" },
-    system: systemBlocks(buildSchoolContext(user, db)),
+    system: systemBlocks(buildSchoolContext(user, db), user, db),
     messages,
   });
 
@@ -152,7 +157,10 @@ export async function generateReply(user: User, db: Database, text: string): Pro
     fallbacks: "default",
     output_config: { effort: "low" },
     system: systemBlocks(
-      `${buildSchoolContext(user, db)}\n\nThis conversation is happening over WhatsApp: reply in plain text (no Markdown), under 120 words.`,
+      `${buildSchoolContext(user, db)}\n\nThis conversation is happening over WhatsApp: reply in plain text (no Markdown), under 120 words. Some school facts have a picture, shown as [[picture:id]]. When the person asks to see something, or the picture clearly helps, put that marker on its own line at the end and the picture will be sent with your reply; never mention the marker itself.`,
+      user,
+      db,
+      true,
     ),
     messages: [{ role: "user", content: text }],
   });
@@ -191,7 +199,7 @@ export async function draftAnnouncement(user: User, db: Database, notes: string)
     betas: [FALLBACK_BETA],
     fallbacks: "default",
     output_config: { effort: "medium", format: { type: "json_schema", schema: DRAFT_SCHEMA } },
-    system: systemBlocks(buildSchoolContext(user, db)),
+    system: systemBlocks(buildSchoolContext(user, db), user, db),
     messages: [
       {
         role: "user",

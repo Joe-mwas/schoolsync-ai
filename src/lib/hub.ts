@@ -1,14 +1,19 @@
 import { parseBriefPeriod, type BriefPeriod } from "./brief.ts";
+import { pictureRequest } from "./facts.ts";
 import { feeStatement, formatFeeStatement } from "./fees.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
-import { isLeader, type Database, type User } from "./types.ts";
+import { isLeader, type Database, type SchoolFact, type User } from "./types.ts";
 
 /**
  * WhatsApp is the main way families and staff reach the school. Menu choices
  * and keywords are answered straight from the records (instant, free, and
  * working even without the AI); anything else is a question for the AI.
  */
-export type HubAction = { type: "reply"; text: string } | { type: "ai" } | { type: "brief"; period: BriefPeriod };
+export type HubAction =
+  | { type: "reply"; text: string }
+  | { type: "ai" }
+  | { type: "brief"; period: BriefPeriod }
+  | { type: "picture"; fact: SchoolFact };
 
 const GREETINGS = /^(hi+|hello|hey|menu|help|start|options|0|habari|jambo|mambo|hujambo|sasa|niaje)\b[!.?\s]*$/i;
 const first = (u: User) => u.name.split(" ")[0];
@@ -82,6 +87,9 @@ export function routeMessage(db: Database, user: User, text: string, now = Date.
   const lower = t.toLowerCase();
   const reply = (s: string): HubAction => ({ type: "reply", text: s });
   if (GREETINGS.test(t)) return reply(menuText(user));
+  // "Send a picture of the uniform": the school's own picture, no AI needed.
+  const picture = pictureRequest(db, user, t);
+  if (picture) return { type: "picture", fact: picture };
 
   if (isLeader(user.role)) {
     const periods: Record<string, string> = { "1": "", "2": "today", "3": "this week", "4": "this month" };

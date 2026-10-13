@@ -112,6 +112,10 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
               <ScrollToBottom className="chat-log" style={{ maxHeight: 420, background: "var(--surface-2)", borderRadius: 10, padding: "0.75rem" }}>
                 {thread.map((m) => (
                   <div key={m.id} className={`bubble ${m.direction === "inbound" ? "assistant" : "user"}`} style={m.direction === "inbound" ? { background: "var(--surface)" } : undefined}>
+                    {m.kind === "image" && m.factId && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`/api/facts/${m.factId}/image`} alt="" style={{ display: "block", maxWidth: 220, maxHeight: 220, borderRadius: 6, marginBottom: 4 }} />
+                    )}
                     <WaText text={m.body} />
                     <div className="small" style={{ opacity: 0.7, marginTop: 4, fontSize: "0.72rem" }}>
                       {new Date(m.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -155,7 +159,7 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
                       <div className="muted">{m.phone}</div>
                     </td>
                     <td className="small" style={{ whiteSpace: "pre-wrap", maxWidth: 420 }}>{m.body}</td>
-                    <td className="small">{m.direction === "outbound" ? (m.kind === "template" ? "Template" : "Text") : "—"}</td>
+                    <td className="small">{m.direction === "outbound" ? (m.kind === "template" ? "Template" : m.kind === "image" ? "Picture" : "Text") : "—"}</td>
                     <td>
                       <span
                         className={`badge ${m.status === "failed" ? "urgent" : ["sent", "delivered", "read"].includes(m.status) ? "ok" : ""}`}
