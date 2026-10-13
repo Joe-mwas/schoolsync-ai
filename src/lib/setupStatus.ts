@@ -17,7 +17,7 @@ export interface SetupItem {
 }
 
 export interface SetupSection {
-  id: "basics" | "ai" | "whatsapp";
+  id: "basics" | "ai" | "whatsapp" | "mpesa";
   title: string;
   items: SetupItem[];
 }
@@ -134,10 +134,46 @@ export function setupChecklist(env: Env, facts: SetupFacts): SetupSection[] {
     },
   ];
 
+  // M-Pesa is optional: nothing is "missing" until the school starts setting it up.
+  const mpesaStarted = ["MPESA_SHORTCODE", "MPESA_CONSUMER_KEY", "MPESA_CONSUMER_SECRET", "MPESA_CALLBACK_TOKEN"].some((k) => has(env, k));
+  const mp = (envVar: string, label: string, whereFrom: string): SetupItem => ({
+    id: envVar.toLowerCase(),
+    label,
+    envVar,
+    ...(has(env, envVar) ? { status: "ok", detail: "Set." } : { status: mpesaStarted ? "missing" : "optional", detail: whereFrom }),
+  });
+  const callbackToken = env.MPESA_CALLBACK_TOKEN?.trim() ?? "";
+  const sandbox = (env.MPESA_ENV?.trim().toLowerCase() ?? "") !== "production";
+  const mpesa: SetupItem[] = [
+    mp("MPESA_SHORTCODE", "Paybill number", "The school's Paybill (business short code) that parents pay to."),
+    mp("MPESA_CONSUMER_KEY", "Daraja consumer key", "developer.safaricom.co.ke → My Apps → your app → Consumer Key."),
+    mp("MPESA_CONSUMER_SECRET", "Daraja consumer secret", "developer.safaricom.co.ke → My Apps → your app → Consumer Secret."),
+    {
+      id: "mpesa_callback_token",
+      label: "Payment address secret",
+      envVar: "MPESA_CALLBACK_TOKEN",
+      ...(callbackToken.length >= 16
+        ? { status: "ok", detail: "Set. It is part of the private address Safaricom sends payments to." }
+        : callbackToken
+          ? { status: "missing", detail: "Too short: use at least 16 random letters and numbers (e.g. from openssl rand -hex 16)." }
+          : { status: mpesaStarted ? "missing" : "optional", detail: "A long random value (openssl rand -hex 16). Safaricom doesn't sign payments, so this secret keeps the address private." }),
+    },
+    {
+      id: "mpesa_env",
+      label: "Safaricom environment",
+      envVar: "MPESA_ENV",
+      recommended: true,
+      ...(sandbox
+        ? { status: mpesaStarted ? "warn" : "optional", detail: "Using the sandbox (test money). Set MPESA_ENV=production after Safaricom approves your app for the live Paybill." }
+        : { status: "ok", detail: "Production: real payments to the live Paybill." }),
+    },
+  ];
+
   return [
     { id: "basics", title: "Basics", items: basics },
     { id: "ai", title: "AI assistant (Claude)", items: ai },
     { id: "whatsapp", title: "WhatsApp (Meta)", items: whatsapp },
+    { id: "mpesa", title: "M-Pesa payments (Safaricom)", items: mpesa },
   ];
 }
 

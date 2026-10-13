@@ -100,6 +100,23 @@ export interface PersonInput {
   password?: unknown;
   classIds?: unknown;
   childIds?: unknown;
+  admissionNo?: unknown;
+}
+
+/** Compare admission numbers ignoring case, spaces and punctuation ("ADM/1001" = "adm 1001"). */
+export function admissionKey(value: string | null | undefined): string {
+  return (value ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/** A learner's admission number: optional, unique, used as the M-Pesa account number. */
+function cleanAdmissionNo(db: Database, role: Role, raw: unknown, selfId?: string): string | null {
+  const value = typeof raw === "string" ? raw.trim().replace(/\s+/g, " ") : "";
+  if (!value) return null;
+  if (role !== "student") throw new HttpError(400, "Only learners have an admission number");
+  if (value.length > 20 || !/^[A-Za-z0-9 /-]+$/.test(value)) throw new HttpError(400, "Admission numbers use letters, numbers, spaces, / or - (up to 20)");
+  const other = db.users.find((u) => u.id !== selfId && u.role === "student" && admissionKey(u.admissionNo) === admissionKey(value));
+  if (other) throw new HttpError(409, `Admission number ${value} already belongs to ${other.name}`);
+  return value.toUpperCase();
 }
 
 /**
@@ -122,6 +139,8 @@ export function createPerson(db: Database, input: PersonInput, newId: () => stri
   const childIds = uniq(input.childIds);
   checkLinks(db, role, classIds, childIds);
 
+  const admissionNo = cleanAdmissionNo(db, role, input.admissionNo);
+
   const user: User = {
     id: newId(),
     name,
@@ -131,6 +150,7 @@ export function createPerson(db: Database, input: PersonInput, newId: () => stri
     phone,
     classIds,
     childIds,
+    ...(admissionNo ? { admissionNo } : {}),
   };
   // The director picks a temporary password; the person must replace it.
   if (credentials === "dry-run") {
@@ -168,6 +188,7 @@ export function updatePerson(db: Database, id: string, input: PersonInput): User
     user.phone = phone;
   }
   checkCanSignIn(user.role, user.email, user.phone);
+  if (input.admissionNo !== undefined) user.admissionNo = cleanAdmissionNo(db, user.role, input.admissionNo, id);
 
   const classIds = input.classIds !== undefined ? uniq(input.classIds) : user.classIds;
   const childIds = input.childIds !== undefined ? uniq(input.childIds) : user.childIds;

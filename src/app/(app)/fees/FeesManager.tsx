@@ -9,6 +9,7 @@ import type { FeeStatement } from "@/lib/fees";
 interface Learner {
   id: string;
   name: string;
+  admissionNo: string | null;
   classId: string | null;
   className: string;
   charged: number;
@@ -61,11 +62,12 @@ export default function FeesManager({
         ) : (
           <div className="table-wrap" style={{ maxHeight: 420, overflowY: "auto" }}>
             <table>
-              <thead><tr><th>Learner</th><th>Class</th><th>Charged</th><th>Paid</th><th>Balance</th><th /></tr></thead>
+              <thead><tr><th>Learner</th><th>Adm. no.</th><th>Class</th><th>Charged</th><th>Paid</th><th>Balance</th><th /></tr></thead>
               <tbody>
                 {shown.map((l) => (
                   <tr key={l.id} style={selected === l.id ? { background: "var(--surface-2)" } : undefined}>
                     <td>{l.name}</td>
+                    <td className="small">{l.admissionNo ?? "—"}</td>
                     <td className="small">{l.className}</td>
                     <td className="small">{money(l.charged, currency)}</td>
                     <td className="small">{money(l.paid, currency)}</td>
@@ -189,7 +191,7 @@ function Statement({
                 <tr key={e.id}>
                   <td className="small">{e.date}</td>
                   <td className="small">{e.term}</td>
-                  <td className="small">{e.kind === "payment" ? "Payment" : "Charge"}{e.source !== "manual" ? ` (${e.source === "import" ? "uploaded" : "class fee"})` : ""}</td>
+                  <td className="small">{e.kind === "payment" ? "Payment" : "Charge"}{e.source !== "manual" ? ` (${e.source === "import" ? "uploaded" : e.source === "mpesa" ? "M-Pesa, automatic" : "class fee"})` : ""}</td>
                   <td className="small">{money(e.amount, currency)}</td>
                   <td className="small">{[e.reference, e.note].filter(Boolean).join(" · ") || "—"}</td>
                   <td><button className="danger small" onClick={() => remove(e.id)}>Delete</button></td>

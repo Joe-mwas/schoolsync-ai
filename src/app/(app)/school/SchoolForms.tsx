@@ -25,7 +25,7 @@ export default function SchoolForms({
   canCreateAdmin: boolean;
 }) {
   const router = useRouter();
-  const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "" });
+  const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "", admissionNo: "" });
   const [event, setEvent] = useState({ title: "", date: "", description: "" });
   const [cls, setCls] = useState({ name: "", teacherId: "" });
   const [msg, setMsg] = useState<{ person?: string; event?: string; cls?: string }>({});
@@ -45,7 +45,7 @@ export default function SchoolForms({
     const err = await post("/api/users", person);
     setMsg({ person: err ?? `Added ${person.name}. Share the temporary password privately; they will choose their own when they first sign in.` });
     if (!err) {
-      setPerson({ name: "", email: "", role: person.role, phone: "", password: "", classId: "", childId: "" });
+      setPerson({ name: "", email: "", role: person.role, phone: "", password: "", classId: "", childId: "", admissionNo: "" });
       router.refresh();
     }
   }
@@ -92,6 +92,9 @@ export default function SchoolForms({
                 {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
+          )}
+          {person.role === "student" && (
+            <label>Admission number<input value={person.admissionNo} onChange={p("admissionNo")} placeholder="e.g. 1001 (M-Pesa account no.)" maxLength={20} /></label>
           )}
           {person.role === "parent" && (
             <label>

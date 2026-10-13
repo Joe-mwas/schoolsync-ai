@@ -84,7 +84,7 @@ export default function ImportCard() {
         </button>
       </div>
       <p className="small muted">
-        One row per student with their class, and optionally a parent&apos;s name and phone number. Missing classes are created;
+        One row per student with their class, and optionally their admission number (the M-Pesa account number) and a parent&apos;s name and phone number. Missing classes are created;
         brothers and sisters with the same parent phone share one parent account; re-importing the same file adds nothing twice.
         Parents sign in with their phone number. In Excel or Google Sheets, save or download the sheet as <strong>CSV</strong>.
       </p>

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { testAiConnection } from "@/lib/ai";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId } from "@/lib/db";
+import { checkDarajaCredentials, registerC2BUrls } from "@/lib/daraja";
 import { canonicalPhone } from "@/lib/phone";
 import { configuredPublicUrl } from "@/lib/publicUrl";
 import { SELF_TEST_HEADER } from "@/lib/webhookActivity";
@@ -82,6 +83,14 @@ export async function POST(req: Request) {
       case "whatsapp-send":
         result = await sendTest(phone ?? "", me.id);
         break;
+      case "mpesa-credentials":
+        result = await checkDarajaCredentials();
+        break;
+      case "mpesa-register": {
+        const publicUrl = configuredPublicUrl();
+        result = publicUrl ? await registerC2BUrls(publicUrl) : { ok: false, message: "The site's public address isn't known (Render sets RENDER_EXTERNAL_URL; elsewhere set PUBLIC_URL)." };
+        break;
+      }
       default:
         throw new HttpError(400, "Unknown test");
     }
