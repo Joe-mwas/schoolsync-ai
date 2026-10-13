@@ -23,7 +23,7 @@ export function CopyButton({ text }: { text: string }) {
   );
 }
 
-type Kind = "ai" | "whatsapp-credentials" | "webhook" | "whatsapp-send";
+type Kind = "ai" | "whatsapp-credentials" | "webhook" | "whatsapp-send" | "mpesa-credentials" | "mpesa-register";
 
 export function TestButton({ kind, label, defaultPhone }: { kind: Kind; label: string; defaultPhone?: string }) {
   const [busy, setBusy] = useState(false);

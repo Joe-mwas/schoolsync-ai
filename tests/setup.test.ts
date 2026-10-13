@@ -13,7 +13,8 @@ const status = (env: Record<string, string | undefined>, id: string, lastBackupA
 test("a fresh production deploy shows what's missing", () => {
   const env = { NODE_ENV: "production", SESSION_SECRET: "x".repeat(32), DATA_FILE: "/var/data/db.json", DEFAULT_COUNTRY_CODE: "254" };
   const sections = setupChecklist(env, { lastBackupAt: "2026-10-10T08:00:00Z", now: NOW });
-  assert.deepEqual(sections.map((s) => s.id), ["basics", "ai", "whatsapp"]);
+  assert.deepEqual(sections.map((s) => s.id), ["basics", "ai", "whatsapp", "mpesa"]);
+  assert.ok(sections[3].items.every((i) => i.status === "optional"), "M-Pesa is optional until started");
   assert.ok(sections[0].items.filter((i) => !i.recommended).every((i) => i.status === "ok"), "required basics all ready");
   assert.equal(status(env, "school-name"), "optional");
   assert.equal(status({ ...env, SCHOOL_NAME: "Sunrise Academy" }, "school-name"), "ok");
@@ -30,6 +31,17 @@ test("everything connected counts as ready", () => {
     WHATSAPP_TOKEN: "t", WHATSAPP_PHONE_NUMBER_ID: "1", WHATSAPP_VERIFY_TOKEN: "v", WHATSAPP_APP_SECRET: "a", WHATSAPP_TEMPLATE_NAME: "school_announcement",
   };
   assert.deepEqual(countReady(setupChecklist(env, { lastBackupAt: "2026-10-10T08:00:00Z", now: NOW })), { ready: 10, total: 10 });
+});
+
+test("M-Pesa settings count once the school starts setting them up", () => {
+  const base = { NODE_ENV: "production", SESSION_SECRET: "s", DATA_FILE: "/d", DEFAULT_COUNTRY_CODE: "254" };
+  const started = { ...base, MPESA_SHORTCODE: "247247" };
+  assert.equal(status(started, "mpesa_consumer_key"), "missing");
+  assert.equal(status(started, "mpesa_callback_token"), "missing");
+  assert.equal(status({ ...started, MPESA_CALLBACK_TOKEN: "short" }, "mpesa_callback_token"), "missing");
+  assert.equal(status({ ...started, MPESA_CALLBACK_TOKEN: "a".repeat(32) }, "mpesa_callback_token"), "ok");
+  assert.equal(status(started, "mpesa_env"), "warn");
+  assert.equal(status({ ...started, MPESA_ENV: "production" }, "mpesa_env"), "ok");
 });
 
 test("flags risky or stale setups", () => {

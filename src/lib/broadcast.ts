@@ -24,7 +24,7 @@ export interface BroadcastSummary {
 }
 
 /** Most recent inbound message time per normalized phone number. */
-function lastInboundByPhone(messages: WhatsAppMessage[]): Map<string, string> {
+export function lastInboundByPhone(messages: WhatsAppMessage[]): Map<string, string> {
   const last = new Map<string, string>();
   for (const m of messages) {
     if (m.direction !== "inbound") continue;

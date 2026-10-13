@@ -1,10 +1,10 @@
 /** Import formats shared by the server and the browser (no server-only imports). */
 
 export const TEMPLATE_CSV = [
-  "Student name,Class,Student email,Parent name,Parent phone,Parent email",
-  "Brian Kamau,Grade 7 East,,James Kamau,0712 345 678,",
-  "Mercy Kamau,Grade 5 North,,James Kamau,0712 345 678,",
-  "Faith Njeri,Grade 8 West,faith@example.com,Ann Njeri,+254 722 000 111,ann@example.com",
+  "Student name,Admission number,Class,Student email,Parent name,Parent phone,Parent email",
+  "Brian Kamau,1001,Grade 7 East,,James Kamau,0712 345 678,",
+  "Mercy Kamau,1003,Grade 5 North,,James Kamau,0712 345 678,",
+  "Faith Njeri,1002,Grade 8 West,faith@example.com,Ann Njeri,+254 722 000 111,ann@example.com",
 ].join("\r\n");
 
 export interface IssuedCredential {

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { listSnapshots } from "@/lib/backup";
 import { backupDirectory } from "@/lib/db";
+import { callbackUrls, mpesaReceiving } from "@/lib/daraja";
 import { displayOrigin } from "@/lib/publicUrl";
 import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "@/lib/setupStatus";
 import { webhookActivity } from "@/lib/webhookActivity";
@@ -42,7 +43,8 @@ export default async function SetupPage() {
   const { ready, total } = countReady(sections);
   const webhookUrl = `${displayOrigin(await headers())}/api/whatsapp/webhook`;
   const activity = webhookActivity();
-  const [basics, ai, whatsapp] = sections;
+  const [basics, ai, whatsapp, mpesa] = sections;
+  const paymentsUrl = mpesaReceiving() ? callbackUrls(displayOrigin(await headers())).confirmation.replace(/\/c2b\/[^/]+\//, "/c2b/••••••/") : null;
 
   return (
     <div className="stack">
@@ -102,6 +104,30 @@ export default async function SetupPage() {
           <div className="small muted">
             On Meta&apos;s free test number, the phone must first be added under API Setup → To. For normal messages the person must
             have messaged the school in the last 24 hours.
+          </div>
+        </div>
+      </div>
+
+      <div className="card stack">
+        <h2>{mpesa.title}</h2>
+        <p className="small muted">
+          Records Paybill payments in the learner&apos;s fees automatically and WhatsApps the parent a receipt. Parents use the
+          learner&apos;s <strong>admission number</strong> as the account number. Optional: skip this if the school doesn&apos;t use a Paybill.
+        </p>
+        <Checklist section={mpesa} />
+        {paymentsUrl && (
+          <div className="small muted">
+            Safaricom will send payments to <code style={{ wordBreak: "break-all" }}>{paymentsUrl}</code> (the hidden part is your secret).
+          </div>
+        )}
+        <div className="stack">
+          <div className="small" style={{ fontWeight: 600 }}>1. Check the consumer key and secret (changes nothing)</div>
+          <TestButton kind="mpesa-credentials" label="Check M-Pesa connection" />
+          <div className="small" style={{ fontWeight: 600 }}>2. Tell Safaricom to send this Paybill&apos;s payments here</div>
+          <TestButton kind="mpesa-register" label="Register with Safaricom" />
+          <div className="small muted">
+            Register once, and again only if the site address or secret changes. Then try a small payment, or use{" "}
+            <strong>Test a payment</strong> on the Fees page.
           </div>
         </div>
       </div>

@@ -32,7 +32,7 @@ export default function PeopleTable({
 
   const q = filter.trim().toLowerCase();
   const shown = q
-    ? people.filter((p) => [p.name, p.email, p.phone ?? "", ROLE_LABELS[p.role]].some((v) => v.toLowerCase().includes(q)))
+    ? people.filter((p) => [p.name, p.email, p.phone ?? "", p.admissionNo ?? "", ROLE_LABELS[p.role]].some((v) => v.toLowerCase().includes(q)))
     : people;
 
   async function resetPassword(p: PublicUser) {
@@ -145,12 +145,14 @@ function EditPerson({
   const [phone, setPhone] = useState(person.phone ?? "");
   const [classIds, setClassIds] = useState(person.classIds);
   const [childIds, setChildIds] = useState(person.childIds);
+  const [admissionNo, setAdmissionNo] = useState(person.admissionNo ?? "");
   const [error, setError] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const body: Record<string, unknown> = { name, email, phone };
     if (person.role === "teacher" || person.role === "student") body.classIds = classIds;
+    if (person.role === "student") body.admissionNo = admissionNo;
     if (person.role === "parent") body.childIds = childIds;
     const res = await fetch(`/api/users/${person.id}`, {
       method: "PATCH",
@@ -175,13 +177,19 @@ function EditPerson({
         <label>WhatsApp phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2547…" /></label>
       </div>
       {person.role === "student" && (
-        <label style={{ maxWidth: 320 }}>
-          Class
-          <select value={classIds[0] ?? ""} onChange={(e) => setClassIds(e.target.value ? [e.target.value] : [])}>
-            <option value="">—</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <div className="grid grid-3">
+          <label>
+            Class
+            <select value={classIds[0] ?? ""} onChange={(e) => setClassIds(e.target.value ? [e.target.value] : [])}>
+              <option value="">—</option>
+              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <label>
+            Admission number
+            <input value={admissionNo} onChange={(e) => setAdmissionNo(e.target.value)} placeholder="e.g. 1001 (M-Pesa account no.)" maxLength={20} />
+          </label>
+        </div>
       )}
       {(person.role === "teacher" || person.role === "parent") && (
         <div>

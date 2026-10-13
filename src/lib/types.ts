@@ -27,6 +27,8 @@ export interface User {
   sessionVersion?: number;
   /** When this leader last received a brief (the default start of the next one). */
   lastBriefAt?: string | null;
+  /** Learners: the school's admission number, used as the M-Pesa account number. */
+  admissionNo?: string | null;
 }
 
 export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
@@ -135,7 +137,7 @@ export interface ResultComment {
   updatedAt: string;
 }
 
-export type FeeSource = "manual" | "class-charge" | "import";
+export type FeeSource = "manual" | "class-charge" | "import" | "mpesa";
 
 /** A fee charge or payment on a learner's statement (amounts in whole shillings). */
 export interface FeeEntry {
@@ -200,4 +202,30 @@ export interface Database {
   resultComments: ResultComment[];
   fees: FeeEntry[];
   facts: SchoolFact[];
+  mpesaPayments: MpesaPayment[];
+}
+
+/** How an M-Pesa payment was linked to a learner. */
+export type MpesaMatch = "admission" | "name" | "phone" | "manual";
+
+/** One M-Pesa payment to the school's Paybill, as Safaricom reported it. */
+export interface MpesaPayment {
+  id: string;
+  /** M-Pesa receipt number, e.g. QJK3ABC123 (unique). */
+  transId: string;
+  amount: number;
+  /** What the payer typed as the account number. */
+  account: string;
+  payerName: string;
+  /** As Safaricom sends it (often masked). */
+  phone: string;
+  /** When the payment was made (from Safaricom). */
+  paidAt: string;
+  receivedAt: string;
+  status: "recorded" | "unmatched" | "ignored";
+  studentId: string | null;
+  feeEntryId: string | null;
+  matchedBy: MpesaMatch | null;
+  /** True for payments entered with the test form. */
+  test?: boolean;
 }

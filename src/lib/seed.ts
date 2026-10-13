@@ -31,6 +31,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     resultComments: [],
     fees: [],
     facts: [],
+    mpesaPayments: [],
   };
 }
 
@@ -58,8 +59,8 @@ export function seedDatabase(): Database {
       { id: "u-director", name: "Grace Wanjiru", email: "director@schoolsync.test", role: "director", passwordHash: pw, phone: "+254700000001", classIds: [], childIds: [] },
       { id: "u-teacher1", name: "Peter Otieno", email: "teacher@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000002", classIds: ["c-grade7"], childIds: [] },
       { id: "u-teacher2", name: "Mary Akinyi", email: "teacher2@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000003", classIds: ["c-grade8"], childIds: [] },
-      { id: "u-student1", name: "Brian Kamau", email: "student@schoolsync.test", role: "student", passwordHash: pw, classIds: ["c-grade7"], childIds: [] },
-      { id: "u-student2", name: "Faith Njeri", email: "student2@schoolsync.test", role: "student", passwordHash: pw, classIds: ["c-grade8"], childIds: [] },
+      { id: "u-student1", name: "Brian Kamau", email: "student@schoolsync.test", role: "student", passwordHash: pw, classIds: ["c-grade7"], childIds: [], admissionNo: "1001" },
+      { id: "u-student2", name: "Faith Njeri", email: "student2@schoolsync.test", role: "student", passwordHash: pw, classIds: ["c-grade8"], childIds: [], admissionNo: "1002" },
       { id: "u-parent1", name: "James Kamau", email: "parent@schoolsync.test", role: "parent", passwordHash: pw, phone: "+254700000004", classIds: [], childIds: ["u-student1"] },
       { id: "u-parent2", name: "Ann Njeri", email: "parent2@schoolsync.test", role: "parent", passwordHash: pw, phone: "+254700000005", classIds: [], childIds: ["u-student2"] },
     ],
@@ -116,11 +117,12 @@ export function seedDatabase(): Database {
       demoFee("f-4", "u-student2", "payment", 15000, iso(-25), "QK1B8NN3PZ"),
     ],
     facts: [
-      demoFact("fact-fees", "Fees and payments", "How to pay school fees", "Pay by M-Pesa Paybill 247247, account number: the learner's full name and class (e.g. BrianKamau-G7E). Cash is not accepted at the school. Term 3 2026 fees are Ksh 15,000 for Grades 7 and 8."),
+      demoFact("fact-fees", "Fees and payments", "How to pay school fees", "Pay by M-Pesa Paybill 247247, account number: the learner's admission number (e.g. 1001). Payments are recorded automatically and you get a WhatsApp receipt. Cash is not accepted at the school. Term 3 2026 fees are Ksh 15,000 for Grades 7 and 8."),
       demoFact("fact-uniform", "Uniform", "School uniform", "Red sweater with the school badge, white shirt, grey trousers or skirt, black shoes. Sports days: house T-shirt and track pants. Uniforms are sold at Sunrise Outfitters, Moi Avenue."),
       demoFact("fact-hours", "School hours", "School day times", "Gates open 7:00 AM. Lessons 7:30 AM to 3:30 PM, Monday to Friday. Clubs and games until 4:30 PM on Wednesdays."),
       demoFact("fact-staff", "Policies", "Staff meetings", "Staff meeting every Monday at 4:00 PM in the staffroom.", "staff"),
     ],
+    mpesaPayments: [],
   };
 }
 

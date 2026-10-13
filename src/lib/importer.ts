@@ -2,7 +2,7 @@ import { HttpError } from "./errors.ts";
 import { phoneKey } from "./phone.ts";
 import type { IssuedCredential } from "./importFormat.ts";
 import type { Database, SchoolClass, User } from "./types.ts";
-import { createPerson, type Credentials } from "./users.ts";
+import { admissionKey, createPerson, updatePerson, type Credentials } from "./users.ts";
 
 /**
  * Bulk import from a class list: one row per student, with the class and
@@ -55,7 +55,7 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
-type Field = "studentName" | "className" | "studentEmail" | "parentName" | "parentPhone" | "parentEmail";
+type Field = "studentName" | "className" | "studentEmail" | "parentName" | "parentPhone" | "parentEmail" | "admissionNo";
 
 const ALIASES: Record<Field, string[]> = {
   studentName: ["studentname", "student", "name", "learner", "learnername", "pupil", "pupilname"],
@@ -64,6 +64,7 @@ const ALIASES: Record<Field, string[]> = {
   parentName: ["parentname", "parent", "guardian", "guardianname", "parentguardian", "parentguardianname"],
   parentPhone: ["parentphone", "phone", "parentwhatsapp", "whatsapp", "guardianphone", "parentphonenumber", "phonenumber", "mobile", "parentmobile"],
   parentEmail: ["parentemail", "guardianemail", "email"],
+  admissionNo: ["admissionnumber", "admissionno", "admno", "admission", "adm", "admnumber", "regno", "registrationnumber", "studentnumber", "learnernumber"],
 };
 
 export function mapColumns(header: string[]): Record<Field, number> {
@@ -154,12 +155,13 @@ export function runImport(db: Database, csv: string, opts: ImportOptions): Impor
       users: db.users.length,
       created: new Set(createdParents),
       links: new Map<User, string[]>(),
+      admissions: new Map<User, string | null | undefined>(),
       summary: { ...report.summary },
       credentials: report.credentials.length,
       notes: new Map([...parentNotes].map(([k, v]) => [k, v.note])),
     };
     try {
-      importRow(db, r, cell, result, report, parentNotes, createdParents, opts, undo.links);
+      importRow(db, r, cell, result, report, parentNotes, createdParents, opts, undo.links, undo.admissions);
       if (result.actions.length === 0) {
         result.actions.push("Already up to date");
         report.summary.unchanged++;
@@ -168,6 +170,7 @@ export function runImport(db: Database, csv: string, opts: ImportOptions): Impor
       db.classes.length = undo.classes;
       db.users.length = undo.users;
       for (const [parent, childIds] of undo.links) parent.childIds = childIds;
+      for (const [student, admissionNo] of undo.admissions) student.admissionNo = admissionNo;
       // Counts and issued passwords from the undone part of the row go too.
       report.summary = { ...undo.summary, errors: undo.summary.errors + 1 };
       report.credentials.length = undo.credentials;
@@ -194,6 +197,7 @@ function importRow(
   createdParents: Set<string>,
   opts: ImportOptions,
   linked: Map<User, string[]>,
+  admissions: Map<User, string | null | undefined>,
 ) {
   const studentName = cell(r, "studentName");
   const className = cell(r, "className");
@@ -209,14 +213,28 @@ function importRow(
     report.summary.newClasses++;
   }
 
-  // Student: reuse by name within the class, so re-imports are harmless.
-  let student: User | undefined = db.users.find((u) => u.role === "student" && same(u.name, studentName) && u.classIds.includes(cls!.id));
+  // Student: by admission number, else by name within the class, so re-imports are harmless.
+  const admissionNo = cell(r, "admissionNo");
+  let student: User | undefined =
+    (admissionNo ? db.users.find((u) => u.role === "student" && u.admissionNo && admissionKey(u.admissionNo) === admissionKey(admissionNo)) : undefined) ??
+    db.users.find((u) => u.role === "student" && same(u.name, studentName) && u.classIds.includes(cls!.id));
+  if (student && admissionNo) {
+    if (!student.admissionNo) {
+      admissions.set(student, student.admissionNo);
+      updatePerson(db, student.id, { admissionNo });
+      result.actions.push(`Admission number ${student.admissionNo} added`);
+    } else if (admissionKey(student.admissionNo) !== admissionKey(admissionNo)) {
+      throw new HttpError(400, `${student.name} already has admission number ${student.admissionNo}`);
+    } else if (!same(student.name, studentName)) {
+      throw new HttpError(400, `Admission number ${admissionNo} belongs to ${student.name}`);
+    }
+  }
   if (!student) {
     // Students without an email can't sign in, so they get no password.
     const cred = cell(r, "studentEmail") ? opts.credentials() : "dry-run";
     student = createPerson(
       db,
-      { name: studentName, role: "student", email: cell(r, "studentEmail"), classIds: [cls.id] },
+      { name: studentName, role: "student", email: cell(r, "studentEmail"), classIds: [cls.id], admissionNo },
       () => opts.newId("u"),
       cred as Credentials,
     );

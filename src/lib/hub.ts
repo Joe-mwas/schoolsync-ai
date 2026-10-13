@@ -1,6 +1,7 @@
 import { parseBriefPeriod, type BriefPeriod } from "./brief.ts";
 import { pictureRequest } from "./facts.ts";
 import { feeStatement, formatFeeStatement } from "./fees.ts";
+import { payInstructions } from "./mpesa.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
 import { isLeader, type Database, type SchoolFact, type User } from "./types.ts";
 
@@ -79,7 +80,13 @@ function fees(db: Database, user: User): string {
   if (user.role !== "parent") return "Fee balances are shared with parents. Please contact the school office.";
   const kids = children(db, user);
   if (kids.length === 0) return "No learners are linked to your number yet. Please contact the school office.";
-  return kids.map((k) => formatFeeStatement(k.name, feeStatement(db, k.id))).join("\n\n");
+  return kids
+    .map((k) => {
+      const st = feeStatement(db, k.id);
+      const pay = st.balance > 0 ? payInstructions(k) : "";
+      return formatFeeStatement(k.name, st) + (pay ? `\n${pay}` : "");
+    })
+    .join("\n\n");
 }
 
 export function routeMessage(db: Database, user: User, text: string, now = Date.now()): HubAction {
