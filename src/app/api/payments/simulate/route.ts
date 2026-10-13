@@ -1,12 +1,12 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { parseAmount } from "@/lib/fees";
 import { handleMpesaPayment } from "@/lib/payments";
-import { LEADERS } from "@/lib/types";
+import { OFFICE } from "@/lib/types";
 
 /** Try the whole flow (matching, ledger, WhatsApp receipt) with a pretend payment. */
 export async function POST(req: Request) {
   try {
-    await requireApiUser(LEADERS);
+    await requireApiUser(OFFICE);
     const b = (await req.json().catch(() => ({}))) as { amount?: unknown; account?: unknown; payerName?: unknown; phone?: unknown };
     const amount = parseAmount(b.amount);
     if (!amount) throw new HttpError(400, "Enter an amount greater than zero");

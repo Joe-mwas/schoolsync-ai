@@ -20,7 +20,7 @@ interface Grid {
 
 const NEW = "__new__";
 
-export default function ResultsEditor({ classes }: { classes: { id: string; name: string }[] }) {
+export default function ResultsEditor({ classes, readOnly = false }: { classes: { id: string; name: string }[]; readOnly?: boolean }) {
   const [classId, setClassId] = useState(classes[0]?.id ?? "");
   const [examChoice, setExamChoice] = useState("");
   const [newExam, setNewExam] = useState("");
@@ -114,7 +114,7 @@ export default function ResultsEditor({ classes }: { classes: { id: string; name
             Exam / assessment
             <select value={examChoice} onChange={(e) => setExamChoice(e.target.value)}>
               {grid?.exams.map((x) => <option key={x} value={x}>{x}</option>)}
-              <option value={NEW}>+ New exam…</option>
+              {!readOnly && <option value={NEW}>+ New exam…</option>}
             </select>
           </label>
           {examChoice === NEW && (
@@ -148,13 +148,20 @@ export default function ResultsEditor({ classes }: { classes: { id: string; name
                     <td style={{ whiteSpace: "nowrap" }}>{s.name}</td>
                     {areas.map((a) => (
                       <td key={a}>
+                        {readOnly ? (
+                          <span>{s.levels[a] || "—"}</span>
+                        ) : (
                         <select value={s.levels[a] ?? ""} onChange={(e) => setLevel(s.id, a, e.target.value)} aria-label={`${s.name} ${a}`}>
                           <option value="">—</option>
                           {LEVEL_OPTIONS.map((l) => <option key={l} value={l}>{l}</option>)}
                         </select>
+                        )}
                       </td>
                     ))}
                     <td>
+                      {readOnly ? (
+                        <span className="small">{s.comment || "—"}</span>
+                      ) : (
                       <input
                         value={s.comment}
                         onChange={(e) => { const v = e.target.value; setStudents((list) => list.map((x) => (x.id === s.id ? { ...x, comment: v } : x))); setDirty(true); }}
@@ -162,6 +169,7 @@ export default function ResultsEditor({ classes }: { classes: { id: string; name
                         style={{ minWidth: 180 }}
                         aria-label={`${s.name} comment`}
                       />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -169,15 +177,18 @@ export default function ResultsEditor({ classes }: { classes: { id: string; name
             </table>
           </div>
         )}
+        {!readOnly && (
         <div className="row">
           <input value={newArea} onChange={(e) => setNewArea(e.target.value)} placeholder="Add a learning area, e.g. Agriculture" onKeyDown={(e) => e.key === "Enter" && addArea()} style={{ maxWidth: 280 }} />
           <button type="button" className="secondary" onClick={addArea} disabled={!newArea.trim()}>Add column</button>
           <span style={{ flex: 1 }} />
           <button onClick={save} disabled={busy || students.length === 0}>{busy ? "Saving…" : dirty ? "Save results •" : "Save results"}</button>
         </div>
+        )}
         {msg && <div className={msg.ok ? "small" : "error"}>{msg.ok ? "✅ " : ""}{msg.text}</div>}
       </div>
 
+      {!readOnly && (
       <CsvImportCard
         title="Upload results from a spreadsheet"
         description={
@@ -193,6 +204,7 @@ export default function ResultsEditor({ classes }: { classes: { id: string; name
         extra={{ exam }}
         disabledReason={exam ? null : "Choose or name an exam above first."}
       />
+      )}
     </div>
   );
 }

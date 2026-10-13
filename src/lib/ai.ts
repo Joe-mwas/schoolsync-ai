@@ -4,7 +4,7 @@ import { factsFor, factsPrompt } from "./facts.ts";
 import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
-import { isLeader } from "./types.ts";
+import { isLeader, isOffice } from "./types.ts";
 import type { Database, User } from "./types.ts";
 
 export const MODEL = "claude-opus-5-5";
@@ -61,7 +61,7 @@ function recordsFor(user: User, db: Database): string {
       })
       .join("\n");
   }
-  if (isLeader(user.role)) {
+  if (isOffice(user.role)) {
     const f = schoolFees(db, new Date(Date.now() - 7 * 86_400_000).toISOString());
     const exam = examsFor(db)[0];
     const perf = exam ? examPerformance(db, exam) : [];

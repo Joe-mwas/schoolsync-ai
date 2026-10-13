@@ -26,9 +26,8 @@ export default function SchoolForms({
 }) {
   const router = useRouter();
   const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "", admissionNo: "" });
-  const [event, setEvent] = useState({ title: "", date: "", description: "" });
   const [cls, setCls] = useState({ name: "", teacherId: "" });
-  const [msg, setMsg] = useState<{ person?: string; event?: string; cls?: string }>({});
+  const [msg, setMsg] = useState<{ person?: string; cls?: string }>({});
 
   async function addClass(e: React.FormEvent) {
     e.preventDefault();
@@ -50,15 +49,6 @@ export default function SchoolForms({
     }
   }
 
-  async function addEvent(e: React.FormEvent) {
-    e.preventDefault();
-    const err = await post("/api/events", event);
-    setMsg({ event: err ?? `Added ${event.title}` });
-    if (!err) {
-      setEvent({ title: "", date: "", description: "" });
-      router.refresh();
-    }
-  }
 
   const p = (k: keyof typeof person) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setPerson({ ...person, [k]: e.target.value });
 
@@ -74,13 +64,14 @@ export default function SchoolForms({
               <option value="parent">Parent</option>
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
+              <option value="secretary">Secretary</option>
               <option value="director">Director</option>
               {canCreateAdmin && <option value="admin">Administrator</option>}
             </select>
           </label>
           <label>
             Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-            <input type="email" value={person.email} onChange={p("email")} required={person.role === "admin" || person.role === "director" || person.role === "teacher"} />
+            <input type="email" value={person.email} onChange={p("email")} required={person.role === "admin" || person.role === "director" || person.role === "secretary" || person.role === "teacher"} />
           </label>
           <label>WhatsApp phone<input value={person.phone} onChange={p("phone")} placeholder="+2547…" /></label>
           <label>Temporary password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>
@@ -124,30 +115,6 @@ export default function SchoolForms({
         <div><button type="submit">Add class</button></div>
       </form>
 
-      <form className="card stack" onSubmit={addEvent}>
-        <h2>Add an event</h2>
-        <label>Title<input value={event.title} onChange={(e) => setEvent({ ...event, title: e.target.value })} required /></label>
-        <label>Date<input type="date" value={event.date} onChange={(e) => setEvent({ ...event, date: e.target.value })} required /></label>
-        <label>Description<textarea value={event.description} onChange={(e) => setEvent({ ...event, description: e.target.value })} /></label>
-        {msg.event && <div className="small">{msg.event}</div>}
-        <div><button type="submit">Add event</button></div>
-      </form>
     </div>
-  );
-}
-
-export function DeleteEventButton({ id }: { id: string }) {
-  const router = useRouter();
-  return (
-    <button
-      className="danger small"
-      onClick={async () => {
-        if (!confirm("Delete this event?")) return;
-        await fetch(`/api/events/${id}`, { method: "DELETE" });
-        router.refresh();
-      }}
-    >
-      Delete
-    </button>
   );
 }

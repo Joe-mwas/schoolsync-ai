@@ -8,6 +8,11 @@ export function canEditResults(user: User, classId: string): boolean {
   return isLeader(user.role) || (user.role === "teacher" && user.classIds.includes(classId));
 }
 
+/** The secretary can also see every class's results, without changing them. */
+export function canViewResults(user: User, classId: string): boolean {
+  return canEditResults(user, classId) || user.role === "secretary";
+}
+
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Exams with results, newest activity first. */

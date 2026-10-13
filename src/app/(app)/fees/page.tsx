@@ -1,13 +1,13 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { currencyLabel, feeStatement } from "@/lib/fees";
-import { LEADERS } from "@/lib/types";
+import { OFFICE } from "@/lib/types";
 import { darajaConfig, mpesaReceiving } from "@/lib/daraja";
 import FeesManager from "./FeesManager";
 import MpesaCard from "./MpesaCard";
 
 export default async function FeesPage() {
-  await requireUser(LEADERS);
+  await requireUser(OFFICE);
   const db = await readDb();
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
   const learners = db.users

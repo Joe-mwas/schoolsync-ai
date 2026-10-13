@@ -2,7 +2,7 @@ import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { dataFile, mutateDb, readDb } from "@/lib/db";
 import { deleteFactImage, MAX_IMAGE_BYTES, readFactImage, saveFactImage } from "@/lib/factImages";
 import { factsFor } from "@/lib/facts";
-import { LEADERS, type FactImage } from "@/lib/types";
+import { OFFICE, type FactImage } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 /** Add or replace a fact's picture (form field "file"). */
 export async function POST(req: Request, { params }: Ctx) {
   try {
-    const user = await requireApiUser(LEADERS);
+    const user = await requireApiUser(OFFICE);
     const { id } = await params;
     if (Number(req.headers.get("content-length") ?? 0) > MAX_IMAGE_BYTES + 64 * 1024) throw new HttpError(400, "That picture is over 5 MB; use a smaller one");
     const file = (await req.formData().catch(() => null))?.get("file");
@@ -56,7 +56,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
-    const user = await requireApiUser(LEADERS);
+    const user = await requireApiUser(OFFICE);
     const { id } = await params;
     let old: FactImage | null | undefined;
     const fact = await mutateDb((db) => {

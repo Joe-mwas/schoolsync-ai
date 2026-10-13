@@ -2,17 +2,18 @@ import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { LEADERS, STAFF, type Role } from "@/lib/types";
+import { LEADERS, OFFICE, STAFF, type Role } from "@/lib/types";
 
 const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/announcements", label: "Announcements" },
   { href: "/assistant", label: "AI Assistant" },
   { href: "/results", label: "Results", roles: STAFF },
-  { href: "/fees", label: "Fees", roles: LEADERS },
-  { href: "/facts", label: "School facts", roles: LEADERS },
+  { href: "/fees", label: "Fees", roles: OFFICE },
+  { href: "/facts", label: "School facts", roles: OFFICE },
+  { href: "/events", label: "Events", roles: OFFICE },
   { href: "/posters", label: "Poster Designer", roles: STAFF },
-  { href: "/whatsapp", label: "WhatsApp", roles: LEADERS },
+  { href: "/whatsapp", label: "WhatsApp", roles: OFFICE },
   { href: "/school", label: "School Admin", roles: LEADERS },
   { href: "/ai-review", label: "AI Review", roles: ["admin"] },
   { href: "/setup", label: "Setup", roles: ["admin"] },

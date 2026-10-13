@@ -1,12 +1,12 @@
 import { errorResponse, requireApiUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { feeStatement } from "@/lib/fees";
-import { LEADERS } from "@/lib/types";
+import { OFFICE } from "@/lib/types";
 
 /** GET: every learner's fee totals (leaders only). */
 export async function GET() {
   try {
-    await requireApiUser(LEADERS);
+    await requireApiUser(OFFICE);
     const db = await readDb();
     const classes = new Map(db.classes.map((c) => [c.id, c.name]));
     const learners = db.users

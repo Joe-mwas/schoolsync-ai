@@ -10,7 +10,7 @@ import BriefCard from "@/components/BriefCard";
 import { describeLevel } from "@/lib/cbc";
 import { feeStatement, formatMoney } from "@/lib/fees";
 import { studentReport } from "@/lib/results";
-import { isLeader } from "@/lib/types";
+import { isOffice } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -89,9 +89,11 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}
           {!whatsappConfigured() && <div>WhatsApp is in simulation mode — messages are logged, not sent. Set <code>WHATSAPP_TOKEN</code> and <code>WHATSAPP_PHONE_NUMBER_ID</code> to go live.</div>}
-          <div style={{ marginTop: 6 }}>
-            <Link href="/setup">Open Setup to connect and test →</Link>
-          </div>
+          {user.role === "admin" && (
+            <div style={{ marginTop: 6 }}>
+              <Link href="/setup">Open Setup to connect and test →</Link>
+            </div>
+          )}
         </div>
       )}
       <div className="grid grid-2">
@@ -261,7 +263,7 @@ export default async function DashboardPage() {
           <p>{ROLE_LABELS[user.role]} dashboard</p>
         </div>
       </div>
-      {isLeader(user.role) && <DirectorDashboard user={user} db={db} />}
+      {isOffice(user.role) && <DirectorDashboard user={user} db={db} />}
       {user.role === "teacher" && <TeacherDashboard user={user} db={db} />}
       {(user.role === "parent" || user.role === "student") && <FamilyDashboard user={user} db={db} />}
     </div>

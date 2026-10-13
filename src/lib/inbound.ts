@@ -6,7 +6,7 @@ import { readFactImage } from "./factImages.ts";
 import { extractPictures } from "./facts.ts";
 import { MENU_HINT, routeMessage } from "./hub.ts";
 import { phoneKey } from "./phone.ts";
-import { isLeader, type SchoolFact, type User, type WhatsAppMessage } from "./types.ts";
+import { isOffice, type SchoolFact, type User, type WhatsAppMessage } from "./types.ts";
 import { applyStatusUpdates, normalizePhone, sendWhatsAppImage, sendWhatsAppText, type SendResult, type StatusUpdate } from "./whatsapp.ts";
 
 const UNKNOWN_SENDER_REPLY =
@@ -22,7 +22,7 @@ const caption = (f: SchoolFact) => `${f.title}: ${f.details}`;
 async function replyFor(user: User, text: string): Promise<Outgoing[]> {
   const db = await readDb();
   const action = routeMessage(db, user, text);
-  const hint = isLeader(user.role) ? "Reply MENU for options." : MENU_HINT;
+  const hint = isOffice(user.role) ? "Reply MENU for options." : MENU_HINT;
 
   if (action.type === "reply") return [{ text: action.text }];
   if (action.type === "picture") return [{ text: caption(action.fact), picture: action.fact }];

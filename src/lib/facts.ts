@@ -1,5 +1,5 @@
 import { HttpError } from "./errors.ts";
-import { FACT_TOPICS, isLeader, type Database, type FactTopic, type SchoolFact, type User } from "./types.ts";
+import { FACT_TOPICS, isOffice, type Database, type FactTopic, type SchoolFact, type User } from "./types.ts";
 
 export const MAX_FACTS = 300;
 const MAX_DETAILS = 2000;
@@ -53,7 +53,7 @@ export function deleteFact(db: Database, id: string): SchoolFact {
 
 /** Facts this person may be told: staff-only facts never reach parents or learners. */
 export function factsFor(db: Pick<Database, "facts">, user: Pick<User, "role">): SchoolFact[] {
-  const staff = isLeader(user.role) || user.role === "teacher";
+  const staff = isOffice(user.role) || user.role === "teacher";
   return db.facts.filter((f) => f.visibleTo === "everyone" || staff);
 }
 

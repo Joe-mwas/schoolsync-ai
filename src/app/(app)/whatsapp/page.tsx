@@ -8,10 +8,10 @@ import Simulator from "./Simulator";
 import ThreadComposer from "./ThreadComposer";
 import ScrollToBottom from "@/components/ScrollToBottom";
 import WaText from "@/components/WaText";
-import { LEADERS } from "@/lib/types";
+import { OFFICE } from "@/lib/types";
 
 export default async function WhatsAppPage({ searchParams }: { searchParams: Promise<{ phone?: string }> }) {
-  await requireUser(LEADERS);
+  await requireUser(OFFICE);
   const db = await readDb();
   const sp = await searchParams;
 

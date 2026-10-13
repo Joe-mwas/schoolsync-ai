@@ -21,7 +21,7 @@ export function setPassword(user: User, password: string, opts: { mustChange: bo
 }
 
 /** Staff sign in with email; parents and students may use a phone number instead. */
-const EMAIL_REQUIRED: Role[] = ["admin", "director", "teacher"];
+const EMAIL_REQUIRED: Role[] = ["admin", "director", "secretary", "teacher"];
 
 function normalizeEmail(email: unknown, role: Role): string {
   const e = typeof email === "string" ? email.trim().toLowerCase() : "";

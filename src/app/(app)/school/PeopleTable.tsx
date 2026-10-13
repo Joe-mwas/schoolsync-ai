@@ -172,7 +172,7 @@ function EditPerson({
         <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
         <label>
           Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "admin" || person.role === "director" || person.role === "teacher"} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "admin" || person.role === "director" || person.role === "secretary" || person.role === "teacher"} />
         </label>
         <label>WhatsApp phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2547…" /></label>
       </div>
