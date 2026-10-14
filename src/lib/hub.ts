@@ -3,7 +3,7 @@ import { pictureRequest } from "./facts.ts";
 import { feeStatement, formatFeeStatement } from "./fees.ts";
 import { payInstructions } from "./mpesa.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
-import { isLeader, type Database, type SchoolFact, type User } from "./types.ts";
+import { isOffice, type Database, type SchoolFact, type User } from "./types.ts";
 
 /**
  * WhatsApp is the main way families and staff reach the school. Menu choices
@@ -20,7 +20,7 @@ const GREETINGS = /^(hi+|hello|hey|menu|help|start|options|0|habari|jambo|mambo|
 const first = (u: User) => u.name.split(" ")[0];
 
 export function menuText(user: User): string {
-  if (isLeader(user.role)) {
+  if (isOffice(user.role)) {
     return [
       `👋 Hello ${first(user)}! Reply with a number:`,
       "1️⃣ Brief since your last one",
@@ -98,7 +98,7 @@ export function routeMessage(db: Database, user: User, text: string, now = Date.
   const picture = pictureRequest(db, user, t);
   if (picture) return { type: "picture", fact: picture };
 
-  if (isLeader(user.role)) {
+  if (isOffice(user.role)) {
     const periods: Record<string, string> = { "1": "", "2": "today", "3": "this week", "4": "this month" };
     if (t in periods) return { type: "brief", period: parseBriefPeriod(periods[t], user.lastBriefAt, now) };
     if (/^(brief|briefing|summary|report|ripoti|muhtasari)\b/i.test(lower)) return { type: "brief", period: parseBriefPeriod(lower, user.lastBriefAt, now) };

@@ -57,6 +57,7 @@ export function seedDatabase(): Database {
     users: [
       { id: "u-admin", name: "System Administrator", email: "admin@schoolsync.test", role: "admin", passwordHash: pw, classIds: [], childIds: [] },
       { id: "u-director", name: "Grace Wanjiru", email: "director@schoolsync.test", role: "director", passwordHash: pw, phone: "+254700000001", classIds: [], childIds: [] },
+      { id: "u-secretary", name: "Mary Achieng", email: "secretary@schoolsync.test", role: "secretary", passwordHash: pw, phone: "+254700000006", classIds: [], childIds: [] },
       { id: "u-teacher1", name: "Peter Otieno", email: "teacher@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000002", classIds: ["c-grade7"], childIds: [] },
       { id: "u-teacher2", name: "Mary Akinyi", email: "teacher2@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000003", classIds: ["c-grade8"], childIds: [] },
       { id: "u-student1", name: "Brian Kamau", email: "student@schoolsync.test", role: "student", passwordHash: pw, classIds: ["c-grade7"], childIds: [], admissionNo: "1001" },

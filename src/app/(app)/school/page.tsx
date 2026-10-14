@@ -1,11 +1,10 @@
-import { formatDate } from "@/components/AnnouncementCard";
 import { requireUser, toPublic } from "@/lib/auth";
 import { listSnapshots } from "@/lib/backup";
 import { backupDirectory, readDb } from "@/lib/db";
 import BackupsCard from "./BackupsCard";
 import ImportCard from "./ImportCard";
 import PeopleTable from "./PeopleTable";
-import SchoolForms, { DeleteEventButton } from "./SchoolForms";
+import SchoolForms from "./SchoolForms";
 import { LEADERS } from "@/lib/types";
 
 export default async function SchoolPage() {
@@ -14,14 +13,13 @@ export default async function SchoolPage() {
   const snapshots = await listSnapshots(backupDirectory());
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
   const names = new Map(db.users.map((u) => [u.id, u.name]));
-  const events = [...db.events].sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className="stack">
       <div className="page-header">
         <div>
           <h1>School Admin</h1>
-          <p>Manage classes, people and the school calendar. Add classes and teachers first, then students, then parents.</p>
+          <p>Manage classes and people. Add classes and teachers first, then students, then parents. The calendar is under Events.</p>
         </div>
       </div>
 
@@ -51,21 +49,6 @@ export default async function SchoolPage() {
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="card">
-        <h2>Events</h2>
-        <ul className="list">
-          {events.map((e) => (
-            <li key={e.id} className="row" style={{ justifyContent: "space-between" }}>
-              <span>
-                <strong>{e.title}</strong> <span className="muted small">· {formatDate(e.date)}</span>
-                <div className="small muted">{e.description}</div>
-              </span>
-              <DeleteEventButton id={e.id} />
-            </li>
-          ))}
-        </ul>
       </div>
 
       <PeopleTable

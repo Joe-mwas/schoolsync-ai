@@ -1,14 +1,23 @@
-export const ROLES = ["admin", "director", "teacher", "parent", "student"] as const;
+export const ROLES = ["admin", "director", "secretary", "teacher", "parent", "student"] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Run the school: everything a director can do. The admin also owns Setup and AI review. */
+/**
+ * Run the school: people, classes, imports, backups, plus everything the
+ * office does. The admin also owns Setup and AI review.
+ */
 export const LEADERS: Role[] = ["admin", "director"];
-/** Can publish announcements and design posters. */
-export const STAFF: Role[] = ["admin", "director", "teacher"];
+/**
+ * The school office: fees and M-Pesa, school-wide announcements and the
+ * WhatsApp inbox, events, school facts, the brief, and viewing all results.
+ */
+export const OFFICE: Role[] = ["admin", "director", "secretary"];
+/** Can publish announcements, design posters and open the Results page. */
+export const STAFF: Role[] = ["admin", "director", "secretary", "teacher"];
 /** Who announcements can be addressed to. */
 export const AUDIENCE_ROLES: Role[] = ["teacher", "parent", "student"];
 
 export const isLeader = (role: Role): boolean => role === "admin" || role === "director";
+export const isOffice = (role: Role): boolean => OFFICE.includes(role);
 
 export interface User {
   id: string;

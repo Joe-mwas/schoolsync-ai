@@ -1,7 +1,7 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId, readDb } from "@/lib/db";
 import type { Poster, PosterDesign } from "@/lib/types";
-import { isLeader, STAFF } from "@/lib/types";
+import { isOffice, STAFF } from "@/lib/types";
 
 const FIELDS: (keyof PosterDesign)[] = ["template", "title", "subtitle", "body", "footer", "background", "accent", "textColor"];
 
@@ -19,7 +19,7 @@ export async function GET() {
   try {
     const user = await requireApiUser(STAFF);
     const db = await readDb();
-    const posters = isLeader(user.role) ? db.posters : db.posters.filter((p) => p.authorId === user.id);
+    const posters = isOffice(user.role) ? db.posters : db.posters.filter((p) => p.authorId === user.id);
     return Response.json({ posters });
   } catch (err) {
     return errorResponse(err);
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       if (input.id) {
         const existing = db.posters.find((p) => p.id === input.id);
         if (!existing) throw new HttpError(404, "Poster not found");
-        if (existing.authorId !== user.id && !isLeader(user.role)) throw new HttpError(403, "Not allowed");
+        if (existing.authorId !== user.id && !isOffice(user.role)) throw new HttpError(403, "Not allowed");
         existing.name = name;
         existing.design = design;
         return existing;

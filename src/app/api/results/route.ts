@@ -1,7 +1,7 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { SUGGESTED_AREAS } from "@/lib/cbc";
 import { mutateDb, readDb } from "@/lib/db";
-import { canEditResults, examsFor, saveResults, type GridRow } from "@/lib/results";
+import { canEditResults, canViewResults, examsFor, saveResults, type GridRow } from "@/lib/results";
 import { STAFF } from "@/lib/types";
 
 /** GET ?classId=&exam= : the results grid for one class and exam. */
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const classId = url.searchParams.get("classId") ?? "";
     const db = await readDb();
     if (!db.classes.some((c) => c.id === classId)) throw new HttpError(400, "Choose a class");
-    if (!canEditResults(user, classId)) throw new HttpError(403, "You can only see results for your own classes");
+    if (!canViewResults(user, classId)) throw new HttpError(403, "You can only see results for your own classes");
     const learners = db.users.filter((u) => u.role === "student" && u.classIds.includes(classId)).sort((a, b) => a.name.localeCompare(b.name));
     const ids = learners.map((l) => l.id);
     const exams = examsFor(db, ids);
@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     const classAreas = [...new Set(db.results.filter((r) => ids.includes(r.studentId)).map((r) => r.area))];
     const areas = recorded.length ? recorded : classAreas.length ? classAreas : SUGGESTED_AREAS.slice(0, 5);
     return Response.json({
+      canEdit: canEditResults(user, classId),
       exam,
       exams,
       areas,

@@ -1,10 +1,10 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { LEADERS } from "@/lib/types";
+import { OFFICE } from "@/lib/types";
 import FactsEditor from "./FactsEditor";
 
 export default async function FactsPage({ searchParams }: { searchParams: Promise<{ fromLog?: string }> }) {
-  await requireUser(LEADERS);
+  await requireUser(OFFICE);
   const db = await readDb();
   const sp = await searchParams;
   // Arriving from AI Review: start a fact pre-filled from the flagged answer.
