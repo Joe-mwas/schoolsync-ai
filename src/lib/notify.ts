@@ -8,7 +8,7 @@ import { chooseDelivery, normalizePhone, sendWhatsAppTemplate, sendWhatsAppText,
  * text inside the 24-hour window, otherwise the approved template with
  * `title` and `text` as its two parameters. Logged like any other message.
  */
-export async function notifyPerson(user: User, title: string, text: string): Promise<WhatsAppMessage | null> {
+export async function notifyPerson(user: User, title: string, text: string, purpose: WhatsAppMessage["purpose"] = null): Promise<WhatsAppMessage | null> {
   if (!user.phone) return null;
   const db = await readDb();
   const phone = normalizePhone(user.phone);
@@ -27,6 +27,7 @@ export async function notifyPerson(user: User, title: string, text: string): Pro
     createdAt: new Date().toISOString(),
     kind,
     providerMessageId: result.status === "sent" ? result.messageId : null,
+    ...(purpose ? { purpose } : {}),
   };
   await mutateDb((d) => void d.whatsappMessages.push(msg));
   return msg;

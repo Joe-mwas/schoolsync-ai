@@ -105,6 +105,8 @@ export interface WhatsAppMessage {
   kind?: "text" | "template" | "image";
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
+  /** Why the school sent it, for messages the school starts. */
+  purpose?: "fee-reminder" | "receipt" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
