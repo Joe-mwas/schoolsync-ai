@@ -5,6 +5,7 @@ import { OFFICE } from "@/lib/types";
 import { darajaConfig, mpesaReceiving } from "@/lib/daraja";
 import FeesManager from "./FeesManager";
 import MpesaCard from "./MpesaCard";
+import RemindersCard from "./RemindersCard";
 
 export default async function FeesPage() {
   await requireUser(OFFICE);
@@ -17,6 +18,10 @@ export default async function FeesPage() {
       return { id: u.id, name: u.name, admissionNo: u.admissionNo ?? null, classId: u.classIds[0] ?? null, className: classes.get(u.classIds[0] ?? "") ?? "—", charged: st.charged, paid: st.paid, balance: st.balance };
     })
     .sort((a, b) => a.className.localeCompare(b.className) || a.name.localeCompare(b.name));
+  // The latest batch of reminders (messages sent within an hour of the newest one).
+  const reminders = db.whatsappMessages.filter((m) => m.purpose === "fee-reminder").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const lastAt = reminders[0]?.createdAt;
+  const last = lastAt ? { at: lastAt, count: new Set(reminders.filter((m) => Date.parse(lastAt) - Date.parse(m.createdAt) < 3_600_000).map((m) => m.userId)).size } : null;
   // Suggest the most recently used term.
   const defaultTerm = [...db.fees].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.term ?? "";
   return (
@@ -35,6 +40,7 @@ export default async function FeesPage() {
         names={Object.fromEntries(learners.map((l) => [l.id, l.name]))}
         payments={[...db.mpesaPayments].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).filter((p, i) => p.status === "unmatched" || i < 50)}
       />
+      <RemindersCard classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} last={last} />
       <FeesManager learners={learners} classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} defaultTerm={defaultTerm} />
     </div>
   );
