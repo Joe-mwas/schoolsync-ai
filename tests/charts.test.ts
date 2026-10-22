@@ -32,3 +32,21 @@ test("school performance trend and class levels", () => {
   assert.deepEqual(classes.find((c) => c.className === "Grade 7 East")!.counts, { EE: 1, ME: 3, AE: 1, BE: 0 });
   assert.deepEqual(classLevels({ ...db, results: [] }), { exam: null, classes: [] });
 });
+
+test("fee uploads can carry the payment date, so the monthly chart is right", async () => {
+  const { importDate, importFees } = await import("../src/lib/fees.ts");
+  assert.equal(importDate(""), undefined);
+  assert.equal(importDate("2026-02-14"), "2026-02-14");
+  assert.equal(importDate("14/02/2026"), "2026-02-14");
+  assert.equal(importDate("4.6.2026"), "2026-06-04");
+  assert.throws(() => importDate("31/02/2026"), /isn't a date/);
+  assert.throws(() => importDate("Feb 14"), /isn't a date/);
+  const db = seedDatabase();
+  const admin = db.users.find((u) => u.role === "admin")!;
+  const r = importFees(db, admin, "Student name,Class,Term,Fees,Paid,Date\nBrian Kamau,Grade 7 East,Term 1 2026,35000,30000,15/02/2026\nFaith Njeri,Grade 8 West,Term 1 2026,35000,35000,31/02/2026\n");
+  assert.equal(r.updated, 1);
+  assert.match(r.rows[1].error!, /isn't a date/);
+  const t1 = db.fees.filter((f) => f.term === "Term 1 2026");
+  assert.deepEqual(t1.map((f) => [f.kind, f.amount, f.date]), [["charge", 35000, "2026-02-15"], ["payment", 30000, "2026-02-15"]]);
+  assert.equal(monthlyCollections(db, 12, new Date("2026-10-22T09:00:00Z")).find((m) => m.month === "2026-02")!.amount, 30000);
+});

@@ -36,6 +36,19 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # Encrypts the data file and every backup. Generate it on the Setup page and keep a safe copy:
+      # a new server needs the same key to open the data and backups.
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      # Daily encrypted copy outside Render (Cloudflare R2, Backblaze B2 or Amazon S3)
+      - key: OFFSITE_BACKUP_ENDPOINT
+        sync: false
+      - key: OFFSITE_BACKUP_BUCKET
+        sync: false
+      - key: OFFSITE_BACKUP_ACCESS_KEY_ID
+        sync: false
+      - key: OFFSITE_BACKUP_SECRET_ACCESS_KEY
+        sync: false
       # Optional integrations (leave blank to skip)
       - key: ANTHROPIC_API_KEY
         sync: false

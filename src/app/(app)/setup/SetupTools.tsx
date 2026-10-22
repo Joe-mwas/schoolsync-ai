@@ -67,3 +67,51 @@ export function TestButton({ kind, label, defaultPhone }: { kind: Kind; label: s
     </div>
   );
 }
+
+/** Make a strong random key in this browser (it never reaches the server) for DATA_ENCRYPTION_KEY. */
+export function GenerateKey() {
+  const [key, setKey] = useState<string | null>(null);
+  function make() {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    setKey(btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""));
+  }
+  return (
+    <div className="stack" style={{ gap: "0.4rem" }}>
+      <div><button type="button" className="secondary" onClick={make}>{key ? "Generate another" : "Generate a key"}</button></div>
+      {key && (
+        <div className="notice stack" style={{ gap: 6 }}>
+          <div className="row"><code style={{ wordBreak: "break-all" }}>{key}</code><CopyButton text={key} /></div>
+          <div className="small">
+            <strong>First save this key somewhere safe</strong> (a password manager, or written down and locked away). Then paste it into
+            Render as <code>DATA_ENCRYPTION_KEY</code>. Without it, encrypted backups can never be opened. This key is made in your
+            browser and isn&apos;t stored anywhere else.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OffsiteBackupButton() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  async function run() {
+    setBusy(true);
+    setResult(null);
+    const res = await fetch("/api/backups/offsite", { method: "POST" }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    setBusy(false);
+    setResult(res?.ok ? { ok: true, message: `Uploaded ${data.status.lastObject} (${Math.ceil(data.status.bytes / 1024)} KB, encrypted).` } : { ok: false, message: data.error ?? "Network error; try again." });
+  }
+  return (
+    <div className="stack" style={{ gap: "0.4rem" }}>
+      <div><button type="button" className="secondary" onClick={run} disabled={busy}>{busy ? "Uploading…" : "Back up off-site now"}</button></div>
+      {result && (
+        <div className="small" role="status" style={{ color: result.ok ? "var(--accent)" : "var(--danger)" }}>
+          {result.ok ? "✅ " : "❌ "}
+          {result.message}
+        </div>
+      )}
+    </div>
+  );
+}

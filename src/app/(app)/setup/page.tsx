@@ -6,7 +6,9 @@ import { callbackUrls, mpesaReceiving } from "@/lib/daraja";
 import { displayOrigin } from "@/lib/publicUrl";
 import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "@/lib/setupStatus";
 import { webhookActivity } from "@/lib/webhookActivity";
-import { CopyButton, TestButton } from "./SetupTools";
+import { encryptionConfigured } from "@/lib/dataCrypto";
+import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
+import { CopyButton, GenerateKey, OffsiteBackupButton, TestButton } from "./SetupTools";
 
 const PILL: Record<ItemStatus, { label: string; className: string }> = {
   ok: { label: "Ready", className: "badge ok" },
@@ -44,6 +46,9 @@ export default async function SetupPage() {
   const webhookUrl = `${displayOrigin(await headers())}/api/whatsapp/webhook`;
   const activity = webhookActivity();
   const [basics, ai, whatsapp, mpesa] = sections;
+  const encrypted = encryptionConfigured();
+  const offsite = offsiteConfig();
+  const offsiteStatus = await readOffsiteStatus(backupDirectory());
   const paymentsUrl = mpesaReceiving() ? callbackUrls(displayOrigin(await headers())).confirmation.replace(/\/c2b\/[^/]+\//, "/c2b/••••••/") : null;
 
   return (
@@ -65,6 +70,47 @@ export default async function SetupPage() {
       <div className="card stack">
         <h2>{basics.title}</h2>
         <Checklist section={basics} />
+      </div>
+
+      <div className="card stack">
+        <h2>Security &amp; off-site backups</h2>
+        <p className="small muted">
+          Keeps the school&apos;s data private if a file ever leaks, and safe if Render&apos;s disk or account is ever lost.
+        </p>
+        <ul className="list">
+          <li className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
+            <span className={encrypted ? "badge ok" : "badge urgent"} style={{ minWidth: 70, textAlign: "center" }}>{encrypted ? "Ready" : "Missing"}</span>
+            <div>
+              <strong>Encrypt the data and backups</strong><code className="small" style={{ marginLeft: 8 }}>DATA_ENCRYPTION_KEY</code>
+              <div className="small muted">
+                {encrypted
+                  ? "The data file and every backup are encrypted (AES-256). Keep a safe copy of the key: a new server needs the same key to open them."
+                  : "Generate a key below, save it somewhere safe, then add it in Render. Existing data and backups are encrypted on the next start."}
+              </div>
+            </div>
+          </li>
+          <li className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
+            <span className={offsite ? "badge ok" : "badge urgent"} style={{ minWidth: 70, textAlign: "center" }}>{offsite ? "Ready" : "Missing"}</span>
+            <div>
+              <strong>Off-site storage</strong>
+              <code className="small" style={{ marginLeft: 8 }}>OFFSITE_BACKUP_ENDPOINT, _BUCKET, _ACCESS_KEY_ID, _SECRET_ACCESS_KEY</code>
+              <div className="small muted">
+                {offsite
+                  ? `Every day an encrypted copy goes to the "${offsite.bucket}" bucket.`
+                  : "A storage bucket outside Render (Cloudflare R2, Backblaze B2 or Amazon S3) for a daily encrypted copy."}
+              </div>
+            </div>
+          </li>
+          {offsite && (
+            <li className="small">
+              Last off-site copy: <strong>{offsiteStatus.lastSuccessAt ? new Date(offsiteStatus.lastSuccessAt).toLocaleString("en-GB", { timeZone: "Africa/Nairobi" }) : "none yet"}</strong>
+              {offsiteStatus.lastObject && <span className="muted"> · {offsiteStatus.lastObject}</span>}
+              {offsiteStatus.lastError && <div style={{ color: "var(--danger)" }}>Last attempt failed: {offsiteStatus.lastError}</div>}
+            </li>
+          )}
+        </ul>
+        {!encrypted && <GenerateKey />}
+        {offsite && encrypted && <OffsiteBackupButton />}
       </div>
 
       <div className="card stack">
