@@ -163,11 +163,66 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 .template-picker button { font-size: 0.8rem; padding: 0.45rem; }
 .template-picker button.selected { outline: 2px solid var(--primary); }
 
-.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
-.login-card { width: 100%; max-width: 420px; }
-.credit { margin-top: 0.25rem; padding-top: 0.75rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.02em; }
+/* Sign-in page: the form on the left, the animated school scene on the right. */
+.auth { display: grid; grid-template-columns: minmax(360px, 1fr) 1.25fr; min-height: 100vh; background: var(--surface); }
+.auth-panel { display: flex; align-items: center; padding: 3rem clamp(1.25rem, 5vw, 4.5rem); }
+.auth-inner { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 1.75rem; text-align: left; }
+.auth-school { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.35rem; }
+.auth-title { font-size: 1.85rem; margin: 0 0 0.35rem; letter-spacing: -0.01em; }
+.auth-subtitle { font-size: 1.15rem; margin: 0 0 0.25rem; }
+.auth-stack { display: flex; flex-direction: column; gap: 1.5rem; }
+.auth-form { display: flex; flex-direction: column; gap: 1.1rem; }
+.auth-form input, .auth-form select { padding: 0.65rem 0.8rem; }
+.auth-actions { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.35rem; }
+.auth-actions button[type="submit"], .auth-actions button.secondary { width: auto; padding: 0.6rem 1.6rem; }
+.auth-actions button.link { font-size: 0.9rem; font-weight: 500; }
+.auth-actions button.link:hover { text-decoration: underline; filter: none; }
+.auth-success { background: var(--surface-2); border-left: 4px solid var(--accent); padding: 0.9rem 1rem; border-radius: 8px; }
+.auth-success p { margin: 0.35rem 0 0; font-size: 0.9rem; }
+.auth-demo { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1.25rem; border-top: 1px dashed var(--border); }
+.auth-art { position: relative; overflow: hidden; background: #bfe3ff; }
+.auth-art .scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.auth-tagline { position: absolute; z-index: 1; top: clamp(1.5rem, 6vh, 3.5rem); left: clamp(1.5rem, 4vw, 3rem); right: 1.5rem; display: flex; flex-direction: column; gap: 0.35rem; color: #1b2a4a; }
+.auth-tagline strong { font-size: clamp(1.3rem, 2.4vw, 1.9rem); line-height: 1.2; max-width: 22ch; letter-spacing: -0.01em; }
+.auth-tagline span { font-size: 0.95rem; opacity: 0.8; }
+.credit { padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); letter-spacing: 0.02em; }
 .credit strong { color: var(--primary); font-weight: 600; }
-.demo-accounts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+/* The scene's motion. */
+.scene-leg { stroke: #26324d; stroke-width: 6; stroke-linecap: round; }
+.scene-arm { stroke: #6b4a32; stroke-width: 4.5; stroke-linecap: round; }
+.scene-leg, .scene-arm, .scene-wheel, .scene-flag { transform-box: fill-box; }
+.scene-leg, .scene-arm { transform-origin: 50% 0%; animation: scene-swing 0.9s ease-in-out infinite alternate; }
+.scene-leg-b, .scene-arm-f { animation-direction: alternate-reverse; }
+.scene-leg-b, .scene-arm-b { opacity: 0.75; }
+.scene-bob { animation: scene-bob 0.45s ease-in-out infinite alternate; }
+.scene-walker { animation: scene-walk 16s linear infinite; }
+.scene-bus { animation: scene-drive 11s linear infinite; animation-delay: -4s; }
+.scene-wheel { transform-origin: 50% 50%; animation: scene-spin 0.5s linear infinite; }
+.scene-cloud { animation: scene-drift 60s linear infinite; }
+.scene-sun { animation: scene-glow 4s ease-in-out infinite alternate; transform-origin: 640px 110px; }
+.scene-flag { transform-origin: 0% 50%; animation: scene-wave 1.6s ease-in-out infinite alternate; }
+@keyframes scene-swing { from { transform: rotate(24deg); } to { transform: rotate(-24deg); } }
+@keyframes scene-bob { from { transform: translateY(0); } to { transform: translateY(-2.5px); } }
+@keyframes scene-walk { 0% { transform: translateX(250px); opacity: 0; } 4% { opacity: 1; } 88% { opacity: 1; } 96%, 100% { transform: translateX(640px); opacity: 0; } }
+@keyframes scene-drive { from { transform: translateX(-260px); } to { transform: translateX(900px); } }
+@keyframes scene-spin { to { transform: rotate(360deg); } }
+@keyframes scene-drift { from { transform: translateX(-260px); } to { transform: translateX(900px); } }
+@keyframes scene-glow { from { transform: scale(1); } to { transform: scale(1.06); } }
+@keyframes scene-wave { from { transform: skewY(-4deg) scaleX(1); } to { transform: skewY(5deg) scaleX(0.92); } }
+@media (prefers-reduced-motion: reduce) {
+  .auth-art * { animation: none !important; }
+  .scene-walker { transform: translateX(320px); }
+}
+@media (max-width: 860px) {
+  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth-art { order: -1; height: 230px; }
+  .auth-tagline { top: 1rem; left: 16px; }
+  .auth-tagline span { display: none; }
+  .auth-panel { padding: 1.75rem 16px 2.5rem; align-items: flex-start; }
+  .auth-inner { max-width: 440px; gap: 1.4rem; }
+}
+.demo-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }

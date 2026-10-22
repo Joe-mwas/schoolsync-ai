@@ -6,7 +6,7 @@ import type { Database } from "./types.ts";
  */
 export function migrateDatabase(db: Database, env: Record<string, string | undefined> = process.env): boolean {
   let changed = false;
-  for (const key of ["aiLogs", "results", "resultComments", "fees", "facts", "mpesaPayments", "adminActions", "featureRequests", "forwardedQuestions", "duties", "assignments"] as const) {
+  for (const key of ["aiLogs", "results", "resultComments", "fees", "facts", "mpesaPayments", "adminActions", "featureRequests", "forwardedQuestions", "duties", "assignments", "passwordHelp"] as const) {
     if (!Array.isArray(db[key])) {
       (db as unknown as Record<string, unknown[]>)[key] = [];
       changed = true;

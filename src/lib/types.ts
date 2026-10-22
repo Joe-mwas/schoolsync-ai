@@ -135,7 +135,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | "password-help" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -248,6 +248,23 @@ export interface Database {
   forwardedQuestions: ForwardedQuestion[];
   duties: Duty[];
   assignments: Assignment[];
+  passwordHelp: PasswordHelpRequest[];
+}
+
+/** Someone who forgot their password asked, from the sign-in page, for a new one. */
+export interface PasswordHelpRequest {
+  id: string;
+  /** What they typed: their email or phone, the role they picked, their name and an optional note. */
+  contact: string;
+  role: Role | null;
+  name: string;
+  note: string;
+  /** The account those details match, if any (never told to the person asking). */
+  userId: string | null;
+  status: "open" | "reset" | "dismissed";
+  createdAt: string;
+  handledAt: string | null;
+  handledBy: string | null;
 }
 
 /** Homework or revision material a teacher sets for one or more classes. */

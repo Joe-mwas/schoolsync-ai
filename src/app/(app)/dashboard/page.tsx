@@ -12,6 +12,8 @@ import { feeStatement, formatMoney, schoolFees } from "@/lib/fees";
 import { studentReport } from "@/lib/results";
 import { dutiesFor, dutyWhen } from "@/lib/duties";
 import { assignmentsFor } from "@/lib/assignments";
+import PasswordHelpCard from "@/components/PasswordHelpCard";
+import { describeAccount } from "@/lib/passwordHelp";
 import { isSchoolWide } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -80,6 +82,13 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         {user.role === "headteacher" && <Stat label="Open duties" value={db.duties.filter((d) => d.status === "open").length} />}
         {(user.role === "admin" || user.role === "secretary") && <Stat label="WhatsApp sent (7 days)" value={waWeek} />}
       </div>
+      {user.role === "admin" && (
+        <PasswordHelpCard
+          requests={db.passwordHelp
+            .filter((r) => r.status === "open")
+            .map((r) => ({ id: r.id, name: r.name, contact: r.contact, role: r.role ? ROLE_LABELS[r.role] : null, note: r.note, account: describeAccount(db, r), matched: Boolean(r.userId && db.users.some((u) => u.id === r.userId)), createdAt: r.createdAt }))}
+        />
+      )}
       <BriefCard />
       {user.role === "admin" && (
         <Link href="/ai-review?show=unreviewed" className="card row" style={{ justifyContent: "space-between", color: "inherit" }}>
