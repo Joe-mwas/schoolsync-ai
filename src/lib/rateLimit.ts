@@ -56,6 +56,33 @@ export class LoginLimiter {
     }
   }
 
+  /** Accounts (email or phone key) currently locked out, with when each unlocks. */
+  lockedAccounts(now = Date.now()): { account: string; until: number }[] {
+    const locked = new Map<string, number>();
+    for (const key of [...this.failures.keys()]) {
+      if (!key.startsWith("acct:")) continue;
+      const list = this.recent(key, now);
+      if (list.length < this.opts.maxPerAccount) continue;
+      const account = key.slice(key.indexOf(":", 5) + 1);
+      const until = list[list.length - this.opts.maxPerAccount] + this.opts.windowMs;
+      locked.set(account, Math.max(locked.get(account) ?? 0, until));
+    }
+    return [...locked].map(([account, until]) => ({ account, until }));
+  }
+
+  /** Let an account try again now (from any address). Returns how many lockouts were cleared. */
+  clearAccount(account: string): number {
+    const suffix = `:${account.trim().toLowerCase()}`;
+    let cleared = 0;
+    for (const key of [...this.failures.keys()]) {
+      if (key.startsWith("acct:") && key.endsWith(suffix)) {
+        this.failures.delete(key);
+        cleared++;
+      }
+    }
+    return cleared;
+  }
+
   /** A successful sign-in clears that account's failures (not the IP's). */
   recordSuccess(ip: string, email: string): void {
     this.failures.delete(this.keys(ip, email)[0][0]);

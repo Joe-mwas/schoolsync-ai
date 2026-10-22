@@ -38,6 +38,8 @@ export interface User {
   lastBriefAt?: string | null;
   /** Learners: the school's admission number, used as the M-Pesa account number. */
   admissionNo?: string | null;
+  /** Directors: the Nairobi date (YYYY-MM-DD) the last automatic morning brief went out. */
+  morningBriefDate?: string | null;
 }
 
 export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
@@ -106,7 +108,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -214,6 +216,53 @@ export interface Database {
   fees: FeeEntry[];
   facts: SchoolFact[];
   mpesaPayments: MpesaPayment[];
+  adminActions: AdminAction[];
+  featureRequests: FeatureRequest[];
+  forwardedQuestions: ForwardedQuestion[];
+}
+
+/** A system question a director asked the School AI, passed to the administrator. */
+export interface ForwardedQuestion {
+  id: string;
+  fromId: string;
+  fromName: string;
+  question: string;
+  /** What the AI understood, for context. */
+  details: string;
+  status: "open" | "answered";
+  createdAt: string;
+  answeredAt: string | null;
+}
+
+/** Changes the admin AI can propose; each runs only when the administrator approves it. */
+export type AdminActionKind = "update_person" | "reset_password" | "unlock_sign_in" | "match_payment" | "resend_message";
+
+export interface AdminAction {
+  id: string;
+  kind: AdminActionKind;
+  /** The proposal as the AI made it (validated again when approved). */
+  input: Record<string, unknown>;
+  /** One line for the approval card, e.g. "Change James Kamau's phone to +254712345678". */
+  summary: string;
+  /** Why the AI proposes it. */
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "failed";
+  /** What happened when it ran (never contains passwords). */
+  result: string | null;
+  proposedAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+}
+
+/** A new feature the administrator wants, written up by the admin AI. */
+export interface FeatureRequest {
+  id: string;
+  title: string;
+  problem: string;
+  proposal: string;
+  status: "new" | "sent" | "done";
+  createdAt: string;
+  createdBy: string;
 }
 
 /** How an M-Pesa payment was linked to a learner. */

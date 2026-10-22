@@ -10,7 +10,7 @@ import type { Database, User } from "./types.ts";
 export const MODEL = "claude-opus-5-5";
 // Server-side fallback: if a request is declined by a safety classifier, the
 // API re-runs it on Anthropic's recommended fallback model in the same call.
-const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
 let client: Anthropic | null = null;
 
@@ -18,7 +18,7 @@ export function aiConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 }
 
-function getClient(): Anthropic {
+export function getClient(): Anthropic {
   client ??= new Anthropic();
   return client;
 }
