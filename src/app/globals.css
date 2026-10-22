@@ -1,11 +1,11 @@
 /* Light ("soft white", easy on the eyes) is the default; people can switch to dark (see ThemeToggle). */
 :root {
-  --bg: #f1f2f0;
-  --surface: #fafaf7;
-  --surface-2: #eceee9;
-  --border: #dfe1db;
+  --bg: #e7e8e3;
+  --surface: #f1f1ec;
+  --surface-2: #e4e5df;
+  --border: #d5d7cf;
   --text: #1d2129;
-  --muted: #5b6270;
+  --muted: #555c69;
   --primary: #2952cc;
   --primary-contrast: #ffffff;
   --accent: #0f9d76;
@@ -69,6 +69,7 @@ p { margin: 0 0 0.75rem; }
   height: 100vh;
 }
 .brand { font-weight: 700; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; }
+.brand-mark-svg { flex: none; border-radius: 8px; }
 .brand-mark {
   width: 28px; height: 28px; border-radius: 8px;
   background: var(--primary); color: var(--primary-contrast);
@@ -128,7 +129,20 @@ button, .button {
   background: var(--primary); color: var(--primary-contrast);
   display: inline-flex; align-items: center; gap: 0.4rem;
 }
-button:hover:not(:disabled) { filter: brightness(1.08); }
+button, .button {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.10);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+button:hover:not(:disabled), .button:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.16);
+  text-decoration: none;
+}
+button:active:not(:disabled), .button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.10); }
+button.link, button.link:hover:not(:disabled) { box-shadow: none; transform: none; }
+:root[data-theme="dark"] button:hover:not(:disabled), :root[data-theme="dark"] .button:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+@media (prefers-reduced-motion: reduce) { button, .button { transition: none; } button:hover:not(:disabled), .button:hover { transform: none; } }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 button.secondary, .button.secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
 button.danger { background: transparent; color: var(--danger); border-color: var(--border); }
@@ -240,14 +254,14 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 /* Dashboard charts. Series colours were checked for contrast and colour-blind readers in both themes. */
 .viz {
   --viz-1: #2a78d6;
-  --viz-2: #eb6834;
-  --viz-grid: #e4e5df;
+  --viz-2: #d95926;
+  --viz-grid: #dcded6;
   --viz-axis: #c3c2b7;
   /* CBC levels, an ordered single-hue ramp: Exceeding (strongest) → Below. */
-  --lvl-ee: #104281;
-  --lvl-me: #256abf;
-  --lvl-ae: #5598e7;
-  --lvl-be: #86b6ef;
+  --lvl-ee: #0d366b;
+  --lvl-me: #1c5cab;
+  --lvl-ae: #3987e5;
+  --lvl-be: #6da7ec;
 }
 :root[data-theme="dark"] .viz {
   --viz-1: #3987e5;
@@ -260,7 +274,9 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
   --lvl-be: #184f95;
 }
 .viz { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
-.viz-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem 1rem; flex-wrap: wrap; }
+.viz-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem 1rem; }
+.viz-head > div:first-child { flex: 1; min-width: 0; }
+.viz-headline { flex: none; }
 .viz-head h2 { margin: 0; font-size: 1.05rem; }
 .viz-sub { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.85rem; }
 .viz-headline { text-align: right; display: flex; flex-direction: column; }
@@ -292,4 +308,4 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 .viz-table td, .viz-table th { font-variant-numeric: tabular-nums; }
 .viz-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 @media (max-width: 960px) { .viz-grid-2 { grid-template-columns: 1fr; } }
-@media (max-width: 520px) { .viz-headline { text-align: left; } }
+@media (max-width: 520px) { .viz-head { flex-wrap: wrap; } .viz-head > div:first-child { flex-basis: 100%; } .viz-headline { text-align: left; } }

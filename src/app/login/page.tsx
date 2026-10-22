@@ -1,3 +1,4 @@
+import BrandMark from "@/components/BrandMark";
 import { redirect } from "next/navigation";
 import { schoolName } from "@/lib/ai";
 import { getCurrentUser } from "@/lib/auth";
@@ -17,7 +18,7 @@ export default async function LoginPage() {
         <div className="auth-inner">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div className="brand">
-              <span className="brand-mark">S</span> SchoolSync AI
+              <BrandMark /> SchoolSync AI
             </div>
             <ThemeToggle initial={await currentTheme()} />
           </div>

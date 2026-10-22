@@ -1,3 +1,4 @@
+import BrandMark from "@/components/BrandMark";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -39,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="brand">
-            <span className="brand-mark">S</span> SchoolSync
+            <BrandMark /> SchoolSync
           </div>
           <Nav items={items} />
           <div className="user-card">
