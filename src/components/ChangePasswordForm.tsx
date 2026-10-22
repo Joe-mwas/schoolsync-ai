@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -46,15 +47,15 @@ export default function ChangePasswordForm({ required = false }: { required?: bo
       )}
       <label>
         {required ? "Temporary password" : "Current password"}
-        <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} required autoComplete="current-password" />
+        <PasswordInput value={current} onChange={(e) => setCurrent(e.target.value)} required autoComplete="current-password" />
       </label>
       <label>
         New password (at least 8 characters)
-        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} required minLength={8} autoComplete="new-password" />
+        <PasswordInput value={next} onChange={(e) => setNext(e.target.value)} required minLength={8} autoComplete="new-password" />
       </label>
       <label>
         Confirm new password
-        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} autoComplete="new-password" />
+        <PasswordInput value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} autoComplete="new-password" />
       </label>
       {msg && <div className={msg.ok ? "small" : "error"}>{msg.text}</div>}
       <div>

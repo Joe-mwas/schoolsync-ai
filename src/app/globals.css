@@ -309,3 +309,14 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 .viz-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 @media (max-width: 960px) { .viz-grid-2 { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .viz-head { flex-wrap: wrap; } .viz-head > div:first-child { flex-basis: 100%; } .viz-headline { text-align: left; } }
+
+/* Password boxes with a show/hide eye (PasswordInput). */
+.password-field { position: relative; display: block; width: 100%; }
+.password-field input { width: 100%; padding-right: 2.75rem; }
+.password-toggle, .password-toggle:hover:not(:disabled), .password-toggle:active:not(:disabled) {
+  position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+  width: 2.25rem; height: 2.25rem; padding: 0; justify-content: center;
+  background: transparent; color: var(--muted); border: none; box-shadow: none; filter: none;
+}
+.password-toggle:hover:not(:disabled) { color: var(--text); }
+.password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 6px; }

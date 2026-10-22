@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/permissions";
@@ -75,7 +76,7 @@ export default function SchoolForms({
             <input type="email" value={person.email} onChange={p("email")} required={person.role !== "parent" && person.role !== "student"} />
           </label>
           <label>WhatsApp phone<input value={person.phone} onChange={p("phone")} placeholder="+2547…" /></label>
-          <label>Temporary password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>
+          <label>Temporary password<PasswordInput value={person.password} onChange={p("password")} required minLength={8} /></label>
           {(person.role === "teacher" || person.role === "student") && (
             <label>
               Class
