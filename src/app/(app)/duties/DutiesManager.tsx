@@ -58,7 +58,7 @@ export default function DutiesManager({ duties, teachers, names, canAssign, myId
       <div>
         <strong>{d.title}</strong>
         {when(d) && <span className="small muted"> · {when(d)}</span>}
-        {canAssign && <div className="small">For: {d.teacherIds.map((id) => names[id] ?? "removed teacher").join(", ")}</div>}
+        {(canAssign || !d.teacherIds.includes(myId)) && <div className="small">For: {d.teacherIds.map((id) => names[id] ?? "removed teacher").join(", ")}</div>}
         {d.details && <div className="small muted" style={{ whiteSpace: "pre-wrap" }}>{d.details}</div>}
         <div className="small muted">
           From {names[d.createdBy] ?? "the school"}
@@ -66,11 +66,13 @@ export default function DutiesManager({ duties, teachers, names, canAssign, myId
         </div>
       </div>
       <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
-        {d.status === "open" ? (
-          <button className="small" onClick={() => setStatus(d, "done")}>Mark done</button>
-        ) : (
-          <button className="secondary small" onClick={() => setStatus(d, "open")}>Reopen</button>
-        )}
+        {(canAssign || d.teacherIds.includes(myId)) &&
+          (d.status === "open" ? (
+            <button className="small" onClick={() => setStatus(d, "done")}>Mark done</button>
+          ) : (
+            <button className="secondary small" onClick={() => setStatus(d, "open")}>Reopen</button>
+          ))}
+        {!canAssign && !d.teacherIds.includes(myId) && <span className={`badge ${d.status === "done" ? "ok" : ""}`}>{d.status === "done" ? "Done" : "Open"}</span>}
         {canAssign && <button className="danger small" onClick={() => remove(d)}>Remove</button>}
       </div>
     </li>
@@ -109,7 +111,7 @@ export default function DutiesManager({ duties, teachers, names, canAssign, myId
       )}
 
       <div className="card stack">
-        <h2>{canAssign ? "Open duties" : "My duties"} ({open.length})</h2>
+        <h2>{canAssign || duties.some((d) => !d.teacherIds.includes(myId)) ? "Open duties" : "My duties"} ({open.length})</h2>
         {open.length === 0 ? <p className="small muted" style={{ margin: 0 }}>Nothing open.</p> : <ul className="list">{open.map(row)}</ul>}
         {done.length > 0 && (
           <div>

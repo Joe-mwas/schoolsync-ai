@@ -4,7 +4,7 @@ import { createDuty, deleteDuty, dutiesFor, dutyMessage, setDutyStatus } from ".
 import { canManageAnnouncement, canTargetClass, ROLE_LABELS } from "../src/lib/permissions.ts";
 import { canEditResults, canViewResults } from "../src/lib/results.ts";
 import { seedDatabase } from "../src/lib/seed.ts";
-import { canManageRole, DUTY_MANAGERS, FEE_VIEWERS, isLeader, isOffice, isSchoolWide, LEADERS, PEOPLE_MANAGERS } from "../src/lib/types.ts";
+import { canManageRole, DUTY_MANAGERS, DUTY_VIEWERS, FEE_VIEWERS, isLeader, isOffice, isSchoolWide, LEADERS, PEOPLE_MANAGERS, POSTER_MAKERS, WHATSAPP_INBOX } from "../src/lib/types.ts";
 import { assertCanManage, createPerson } from "../src/lib/users.ts";
 
 const db = seedDatabase();
@@ -26,11 +26,23 @@ test("the headteacher manages teachers, learners and parents, nobody above", () 
   assert.throws(() => assertCanManage(ht(), u("u-director")), /teachers, learners and parents only/);
   assert.throws(() => assertCanManage(ht(), { role: "secretary" }), /teachers, learners and parents only/);
   assert.doesNotThrow(() => assertCanManage(ht(), u("u-teacher1")));
-  assert.equal(canManageRole("director", "headteacher"), true);
-  assert.equal(canManageRole("director", "admin"), false);
+  for (const r of ["admin", "director", "headteacher", "secretary", "teacher", "parent", "student"]) {
+    assert.equal(canManageRole("director", r), false, `director can't manage ${r}`);
+    assert.equal(canManageRole("admin", r), true, `admin manages ${r}`);
+  }
   assert.equal(canManageRole("secretary", "teacher"), false);
   const d = seedDatabase();
   assert.throws(() => createPerson(d, { name: "H", role: "headteacher", password: "longenough1" }, () => "u-h2"), /email/i);
+});
+
+test("the director's menu is kept to the essentials", () => {
+  for (const group of [PEOPLE_MANAGERS, WHATSAPP_INBOX, POSTER_MAKERS, DUTY_MANAGERS]) assert.ok(!group.includes("director"));
+  assert.ok(DUTY_VIEWERS.includes("director") && FEE_VIEWERS.includes("director") && isOffice("director"));
+  const d = seedDatabase();
+  const director = d.users.find((x) => x.id === "u-director")!;
+  assert.equal(dutiesFor(d, director).length, d.duties.length, "the director follows every duty");
+  assert.throws(() => createDuty(d, director, { title: "x", teacherIds: ["u-teacher1"] }), /Only the headteacher or administrator/);
+  assert.throws(() => setDutyStatus(d, director, "duty-demo", "done"), /isn't yours/);
 });
 
 test("duties: assigned by the headteacher, seen and finished by the teacher", () => {

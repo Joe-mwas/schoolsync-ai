@@ -7,10 +7,12 @@ export type Role = (typeof ROLES)[number];
  * may do one kind of thing.
  */
 
-/** Run the school: backups and every kind of account. The admin also owns Setup and AI review. */
+/** The system owner (the administrator / IT): Setup, AI Review, Admin AI, backups. */
+export const ADMINS: Role[] = ["admin"];
+/** School leadership: sees and decides across the school. */
 export const LEADERS: Role[] = ["admin", "director"];
-/** Manage people and classes: the headteacher only teachers, learners and parents (see canManageRole). */
-export const PEOPLE_MANAGERS: Role[] = ["admin", "director", "headteacher"];
+/** Add and manage accounts and classes: the headteacher only teachers, learners and parents (see canManageRole). */
+export const PEOPLE_MANAGERS: Role[] = ["admin", "headteacher"];
 /** Record fees and payments, school facts. */
 export const OFFICE: Role[] = ["admin", "director", "secretary"];
 /** See fees and balances (the headteacher can't change them). */
@@ -18,9 +20,17 @@ export const FEE_VIEWERS: Role[] = ["admin", "director", "headteacher", "secreta
 /** Whole-school view: any class, school-wide announcements, events, the WhatsApp inbox, the brief. */
 export const SCHOOL_WIDE: Role[] = ["admin", "director", "headteacher", "secretary"];
 /** Assign duties to teachers. */
-export const DUTY_MANAGERS: Role[] = ["admin", "director", "headteacher"];
-/** Can publish announcements, design posters and open the Results page. */
+export const DUTY_MANAGERS: Role[] = ["admin", "headteacher"];
+/** See every duty (the director follows them without assigning). */
+export const DUTY_VIEWERS: Role[] = ["admin", "director", "headteacher"];
+/** Read and answer parents in the WhatsApp inbox. */
+export const WHATSAPP_INBOX: Role[] = ["admin", "headteacher", "secretary"];
+/** Design posters. */
+export const POSTER_MAKERS: Role[] = ["admin", "headteacher", "secretary", "teacher"];
+/** Can publish announcements and open the Results page. */
 export const STAFF: Role[] = ["admin", "director", "headteacher", "secretary", "teacher"];
+/** Set assignments and revision work: teachers for their own classes, the headteacher and administrator for any class. */
+export const ASSIGNMENT_SETTERS: Role[] = ["admin", "headteacher", "teacher"];
 /** Who announcements can be addressed to. */
 export const AUDIENCE_ROLES: Role[] = ["teacher", "parent", "student"];
 
@@ -31,7 +41,7 @@ export const isSchoolWide = (role: Role): boolean => SCHOOL_WIDE.includes(role);
 /** Which accounts each role may add, edit or remove. */
 export function canManageRole(actor: Role, target: Role | string): boolean {
   if (actor === "admin") return true;
-  if (actor === "director") return target !== "admin";
+  // The director runs the school but doesn't administer accounts (the administrator does).
   if (actor === "headteacher") return target === "teacher" || target === "student" || target === "parent";
   return false;
 }
@@ -237,6 +247,27 @@ export interface Database {
   featureRequests: FeatureRequest[];
   forwardedQuestions: ForwardedQuestion[];
   duties: Duty[];
+  assignments: Assignment[];
+}
+
+/** Homework or revision material a teacher sets for one or more classes. */
+export interface Assignment {
+  id: string;
+  /** "assignment" has a due date and is marked done; "revision" is notes or practice to revise from. */
+  kind: "assignment" | "revision";
+  title: string;
+  /** Learning area, e.g. Mathematics. */
+  subject: string;
+  details: string;
+  classIds: string[];
+  /** YYYY-MM-DD, assignments only. */
+  dueDate: string | null;
+  /** Optional web link (a worksheet, video, past paper). */
+  link: string | null;
+  createdBy: string;
+  createdAt: string;
+  /** Learners who have marked it done. */
+  doneBy: string[];
 }
 
 /** A duty the headteacher (or director) gives one or more teachers, e.g. "Duty teacher this week". */

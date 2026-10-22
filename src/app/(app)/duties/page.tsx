@@ -1,11 +1,11 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { dutiesFor } from "@/lib/duties";
-import { DUTY_MANAGERS } from "@/lib/types";
+import { DUTY_MANAGERS, DUTY_VIEWERS } from "@/lib/types";
 import DutiesManager from "./DutiesManager";
 
 export default async function DutiesPage() {
-  const me = await requireUser([...DUTY_MANAGERS, "teacher"]);
+  const me = await requireUser([...DUTY_VIEWERS, "teacher"]);
   const db = await readDb();
   const canAssign = DUTY_MANAGERS.includes(me.role);
   const names = Object.fromEntries(db.users.map((u) => [u.id, u.name]));
@@ -20,7 +20,9 @@ export default async function DutiesPage() {
         <div>
           <h1>Duties</h1>
           <p>
-            {canAssign
+            {me.role === "director"
+              ? "Every duty the headteacher has given teachers, and whether it's done."
+              : canAssign
               ? "Give teachers duties (duty teacher, games, exams, clubs, trips…). Each teacher gets it on WhatsApp and marks it done here."
               : "Duties the headteacher has given you. Mark each one done when it's finished."}
           </p>

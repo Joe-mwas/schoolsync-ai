@@ -1,7 +1,7 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId, readDb } from "@/lib/db";
 import type { Poster, PosterDesign } from "@/lib/types";
-import { isSchoolWide, STAFF } from "@/lib/types";
+import { isSchoolWide, POSTER_MAKERS } from "@/lib/types";
 
 const FIELDS: (keyof PosterDesign)[] = ["template", "title", "subtitle", "body", "footer", "background", "accent", "textColor"];
 
@@ -17,7 +17,7 @@ function sanitizeDesign(input: unknown): PosterDesign {
 
 export async function GET() {
   try {
-    const user = await requireApiUser(STAFF);
+    const user = await requireApiUser(POSTER_MAKERS);
     const db = await readDb();
     const posters = isSchoolWide(user.role) ? db.posters : db.posters.filter((p) => p.authorId === user.id);
     return Response.json({ posters });
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await requireApiUser(STAFF);
+    const user = await requireApiUser(POSTER_MAKERS);
     const input = (await req.json().catch(() => ({}))) as { id?: string; name?: string; design?: unknown };
     const name = input.name?.trim() || "Untitled poster";
     const design = sanitizeDesign(input.design);

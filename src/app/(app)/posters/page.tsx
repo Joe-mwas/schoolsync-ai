@@ -1,10 +1,10 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import Designer from "./Designer";
-import { isSchoolWide, STAFF } from "@/lib/types";
+import { isSchoolWide, POSTER_MAKERS } from "@/lib/types";
 
 export default async function PostersPage() {
-  const user = await requireUser(STAFF);
+  const user = await requireUser(POSTER_MAKERS);
   const db = await readDb();
   const posters = isSchoolWide(user.role) ? db.posters : db.posters.filter((p) => p.authorId === user.id);
   return (

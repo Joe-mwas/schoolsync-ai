@@ -59,7 +59,7 @@ export default async function SchoolPage() {
         currentUserRole={me.role}
       />
 
-      {(me.role === "admin" || me.role === "director") && <BackupsCard initial={snapshots} />}
+      {me.role === "admin" && <BackupsCard initial={snapshots} />}
     </div>
   );
 }

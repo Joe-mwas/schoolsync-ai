@@ -14,6 +14,7 @@ export default async function LoginPage() {
         </div>
         <p className="muted">Sign in to your school communication hub.</p>
         <LoginForm demoPassword={showDemo ? DEMO_PASSWORD : null} />
+        <div className="credit">Prepared by <strong>Joe the Techie</strong></div>
       </div>
     </div>
   );

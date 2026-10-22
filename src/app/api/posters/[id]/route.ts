@@ -1,10 +1,10 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
-import { isSchoolWide, STAFF } from "@/lib/types";
+import { isSchoolWide, POSTER_MAKERS } from "@/lib/types";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireApiUser(STAFF);
+    const user = await requireApiUser(POSTER_MAKERS);
     const { id } = await params;
     await mutateDb((db) => {
       const idx = db.posters.findIndex((p) => p.id === id);

@@ -1,7 +1,7 @@
 import { errorResponse, HttpError, requireApiUser, setSessionCookie } from "@/lib/auth";
 import { decodeBackup, readSnapshot } from "@/lib/backup";
 import { backupDirectory, replaceDb } from "@/lib/db";
-import { LEADERS } from "@/lib/types";
+import { ADMINS } from "@/lib/types";
 
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
@@ -11,7 +11,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
  */
 export async function POST(req: Request) {
   try {
-    const me = await requireApiUser(LEADERS);
+    const me = await requireApiUser(ADMINS);
     const name = new URL(req.url).searchParams.get("name");
     let raw: Buffer;
     if (name) {

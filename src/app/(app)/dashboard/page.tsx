@@ -8,9 +8,10 @@ import type { Database, User } from "@/lib/types";
 import { whatsappConfigured } from "@/lib/whatsapp";
 import BriefCard from "@/components/BriefCard";
 import { describeLevel } from "@/lib/cbc";
-import { feeStatement, formatMoney } from "@/lib/fees";
+import { feeStatement, formatMoney, schoolFees } from "@/lib/fees";
 import { studentReport } from "@/lib/results";
 import { dutiesFor, dutyWhen } from "@/lib/duties";
+import { assignmentsFor } from "@/lib/assignments";
 import { isSchoolWide } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -70,11 +71,14 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
   const waWeek = db.whatsappMessages.filter((m) => m.direction === "outbound" && m.createdAt >= weekAgo).length;
   return (
     <>
+      {/* Each role's own figures: the director the school at a glance, the headteacher teaching, the secretary the office. */}
       <div className="grid grid-4">
-        <Stat label="Teachers" value={count("teacher")} />
+        {user.role !== "secretary" && <Stat label="Teachers" value={count("teacher")} />}
         <Stat label="Students" value={count("student")} />
-        <Stat label="Parents" value={count("parent")} />
-        <Stat label="WhatsApp sent (7 days)" value={waWeek} />
+        {user.role === "headteacher" ? <Stat label="Classes" value={db.classes.length} /> : <Stat label="Parents" value={count("parent")} />}
+        {(user.role === "director" || user.role === "secretary") && <Stat label="Fees outstanding" value={formatMoney(schoolFees(db, weekAgo).outstanding)} />}
+        {user.role === "headteacher" && <Stat label="Open duties" value={db.duties.filter((d) => d.status === "open").length} />}
+        {(user.role === "admin" || user.role === "secretary") && <Stat label="WhatsApp sent (7 days)" value={waWeek} />}
       </div>
       <BriefCard />
       {user.role === "admin" && (
@@ -86,15 +90,13 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
           <span className="stat-value" style={{ fontSize: "1.4rem" }}>{db.aiLogs.filter((l) => !l.reviewedAt).length} →</span>
         </Link>
       )}
-      {(!aiConfigured() || !whatsappConfigured()) && (
+      {user.role === "admin" && (!aiConfigured() || !whatsappConfigured()) && (
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}
           {!whatsappConfigured() && <div>WhatsApp is in simulation mode — messages are logged, not sent. Set <code>WHATSAPP_TOKEN</code> and <code>WHATSAPP_PHONE_NUMBER_ID</code> to go live.</div>}
-          {user.role === "admin" && (
-            <div style={{ marginTop: 6 }}>
-              <Link href="/setup">Open Setup to connect and test →</Link>
-            </div>
-          )}
+          <div style={{ marginTop: 6 }}>
+            <Link href="/setup">Open Setup to connect and test →</Link>
+          </div>
         </div>
       )}
       <div className="grid grid-2">
@@ -225,6 +227,21 @@ function FamilyDashboard({ user, db }: { user: User; db: Database }) {
         <Stat label="Urgent notices" value={urgent} />
         <Stat label="Upcoming events" value={db.events.filter((e) => e.date >= new Date().toISOString().slice(0, 10)).length} />
       </div>
+      {user.role === "student" && (() => {
+        const today = new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10);
+        const todo = assignmentsFor(db, user).filter((a) => a.kind === "assignment" && !a.doneBy.includes(user.id));
+        return (
+          <Link href="/assignments" className="card stack" style={{ color: "inherit", gap: 4 }}>
+            <strong>📚 Assignments to do ({todo.length})</strong>
+            {todo.length === 0 && <span className="small muted">Nothing to do. Well done!</span>}
+            {todo.slice(0, 4).map((a) => (
+              <span key={a.id} className="small">
+                {a.subject}: {a.title} <span className={a.dueDate && a.dueDate <= today ? "" : "muted"}>· {a.dueDate && a.dueDate < today ? "overdue" : a.dueDate === today ? "due today" : `due ${a.dueDate}`}</span>
+              </span>
+            ))}
+          </Link>
+        );
+      })()}
       {(user.role === "parent" ? children : user.role === "student" ? [user] : []).map((child) => (
         <LearnerCard key={child.id} db={db} learner={child} showFees={user.role === "parent"} />
       ))}
@@ -252,8 +269,8 @@ function FamilyDashboard({ user, db }: { user: User; db: Database }) {
         <div className="stack">
           <UpcomingEvents db={db} />
           <div className="card">
-            <h2>Have a question?</h2>
-            <p className="muted">Ask the AI assistant about announcements, events, or deadlines.</p>
+            <h2>{user.role === "student" ? "Stuck on something?" : "Have a question?"}</h2>
+            <p className="muted">{user.role === "student" ? "Ask the AI assistant to explain a topic or quiz you for revision." : "Ask the AI assistant about announcements, events, or deadlines."}</p>
             <Link href="/assistant" className="button">Open assistant</Link>
           </div>
         </div>

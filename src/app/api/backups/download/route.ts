@@ -2,12 +2,12 @@ import { gzipSync } from "node:zlib";
 import { errorResponse, requireApiUser } from "@/lib/auth";
 import { readSnapshot } from "@/lib/backup";
 import { backupDirectory, readDb } from "@/lib/db";
-import { LEADERS } from "@/lib/types";
+import { ADMINS } from "@/lib/types";
 
 /** GET ?name=<snapshot> downloads that backup; without a name, the current data. */
 export async function GET(req: Request) {
   try {
-    await requireApiUser(LEADERS);
+    await requireApiUser(ADMINS);
     const name = new URL(req.url).searchParams.get("name");
     const body = name ? await readSnapshot(backupDirectory(), name) : gzipSync(JSON.stringify(await readDb()));
     const filename = name ?? `schoolsync-${new Date().toISOString().slice(0, 10)}_current.json.gz`;
