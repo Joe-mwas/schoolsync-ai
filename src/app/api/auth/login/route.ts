@@ -3,10 +3,12 @@ import { readDb } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { phoneKey } from "@/lib/phone";
 import { clientIp, loginLimiter } from "@/lib/rateLimit";
+import { ROLE_LABELS } from "@/lib/permissions";
+import { ROLES, type Role } from "@/lib/types";
 import { findBySignInName } from "@/lib/users";
 
 export async function POST(req: Request) {
-  const { email, password } = (await req.json().catch(() => ({}))) as { email?: string; password?: string };
+  const { email, password, role } = (await req.json().catch(() => ({}))) as { email?: string; password?: string; role?: string };
   if (!email || !password) {
     return Response.json({ error: "Email or phone, and password, are required" }, { status: 400 });
   }
@@ -30,6 +32,15 @@ export async function POST(req: Request) {
     return Response.json({ error: "Incorrect sign-in details" }, { status: 401 });
   }
   loginLimiter.recordSuccess(ip, account);
+  // The role picked on the sign-in page only guides people; the account decides what they can do.
+  // Told only after the right password, so it reveals nothing to a stranger.
+  if (role && (ROLES as readonly string[]).includes(role) && role !== user.role) {
+    const actual = ROLE_LABELS[user.role];
+    return Response.json(
+      { error: `This is a ${actual} account, so the role is now set to ${actual}. Click Sign in again.`, role: user.role as Role },
+      { status: 403 },
+    );
+  }
   await setSessionCookie(user);
   return Response.json({ ok: true });
 }
