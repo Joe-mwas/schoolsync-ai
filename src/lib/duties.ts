@@ -1,7 +1,7 @@
 import { HttpError } from "./errors.ts";
-import { DUTY_MANAGERS, type Database, type Duty, type User } from "./types.ts";
+import { DUTY_MANAGERS, DUTY_VIEWERS, type Database, type Duty, type User } from "./types.ts";
 
-/** Duties the headteacher (or director/administrator) gives teachers, e.g. "Duty teacher this week". */
+/** Duties the headteacher (or administrator) gives teachers, e.g. "Duty teacher this week". */
 
 export interface DutyInput {
   title?: unknown;
@@ -19,7 +19,7 @@ const date = (v: unknown, label: string): string | null => {
 };
 
 export function createDuty(db: Database, actor: User, input: DutyInput): Duty {
-  if (!DUTY_MANAGERS.includes(actor.role)) throw new HttpError(403, "Only the headteacher, director or administrator assigns duties");
+  if (!DUTY_MANAGERS.includes(actor.role)) throw new HttpError(403, "Only the headteacher or administrator assigns duties");
   const title = typeof input.title === "string" ? input.title.trim().slice(0, 120) : "";
   if (!title) throw new HttpError(400, "Give the duty a title, e.g. Duty teacher this week");
   const ids = Array.isArray(input.teacherIds) ? [...new Set(input.teacherIds.map(String))] : [];
@@ -60,15 +60,15 @@ export function setDutyStatus(db: Database, actor: User, id: string, status: unk
 }
 
 export function deleteDuty(db: Database, actor: User, id: string): void {
-  if (!DUTY_MANAGERS.includes(actor.role)) throw new HttpError(403, "Only the headteacher, director or administrator removes duties");
+  if (!DUTY_MANAGERS.includes(actor.role)) throw new HttpError(403, "Only the headteacher or administrator removes duties");
   const i = db.duties.findIndex((d) => d.id === id);
   if (i === -1) throw new HttpError(404, "Duty not found");
   db.duties.splice(i, 1);
 }
 
-/** What someone may see: managers see every duty, a teacher only their own. */
+/** What someone may see: the headteacher, director and administrator see every duty, a teacher only their own. */
 export function dutiesFor(db: Pick<Database, "duties">, user: Pick<User, "id" | "role">): Duty[] {
-  const list = DUTY_MANAGERS.includes(user.role) ? db.duties : db.duties.filter((d) => d.teacherIds.includes(user.id));
+  const list = DUTY_VIEWERS.includes(user.role) ? db.duties : db.duties.filter((d) => d.teacherIds.includes(user.id));
   return [...list].sort((a, b) => (a.status === b.status ? (a.startDate ?? a.createdAt).localeCompare(b.startDate ?? b.createdAt) : a.status === "open" ? -1 : 1));
 }
 

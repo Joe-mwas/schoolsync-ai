@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
 import Chat from "./Chat";
@@ -12,6 +13,8 @@ const SUGGESTIONS: Record<string, string[]> = {
 
 export default async function AssistantPage() {
   const user = await requireUser();
+  // The director's assistant is the School AI (limited to the school; system questions go to the administrator).
+  if (user.role === "director") redirect("/school-ai");
   return (
     <div className="stack">
       <div className="page-header">

@@ -76,10 +76,11 @@ test("with no administrator, the last director is protected", () => {
   rejects(() => deletePerson(db, "u-teacher1", "u-deputy"), 400, /at least one administrator or director/);
 });
 
-test("only an administrator manages administrator accounts", () => {
+test("the administrator manages accounts; the director doesn't", () => {
   assert.doesNotThrow(() => assertCanManage({ role: "admin" }, { role: "admin" }));
-  assert.doesNotThrow(() => assertCanManage({ role: "director" }, { role: "teacher" }));
+  assert.doesNotThrow(() => assertCanManage({ role: "admin" }, { role: "director" }));
   rejects(() => assertCanManage({ role: "director" }, { role: "admin" }), 403, /administrator/);
+  rejects(() => assertCanManage({ role: "director" }, { role: "teacher" }), 403, /can't manage/);
 });
 
 test("setting a password signs out other sessions", () => {

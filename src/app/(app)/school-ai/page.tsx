@@ -3,12 +3,12 @@ import { requireUser } from "@/lib/auth";
 import AdminAiChat from "../admin-ai/AdminAiChat";
 
 export default async function SchoolAiPage() {
-  await requireUser(["director", "headteacher"]);
+  const me = await requireUser(["director", "headteacher"]);
   return (
     <div className="stack">
       <div className="page-header">
         <div>
-          <h1>School AI</h1>
+          <h1>{me.role === "director" ? "AI Assistant" : "School AI"}</h1>
           <p>
             Ask about the school: fees and payments, events and activities, and families (who owes, how to reach a parent, what parents are
             asking). Questions about the SchoolSync system itself are passed to the administrator. Your morning brief also arrives on WhatsApp
