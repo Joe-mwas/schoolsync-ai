@@ -12,7 +12,7 @@ export async function sendReceipts(studentId: string, paymentId: string): Promis
   if (!student || !payment) return 0;
   const text = receiptText(db, student, payment, schoolName());
   const parents = db.users.filter((u) => u.role === "parent" && u.phone && u.childIds.includes(student.id));
-  for (const parent of parents) await notifyPerson(parent, "Fee payment received", text);
+  for (const parent of parents) await notifyPerson(parent, "Fee payment received", text, "receipt");
   return parents.length;
 }
 
