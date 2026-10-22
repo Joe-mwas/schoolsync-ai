@@ -214,6 +214,39 @@ export interface Database {
   fees: FeeEntry[];
   facts: SchoolFact[];
   mpesaPayments: MpesaPayment[];
+  adminActions: AdminAction[];
+  featureRequests: FeatureRequest[];
+}
+
+/** Changes the admin AI can propose; each runs only when the administrator approves it. */
+export type AdminActionKind = "update_person" | "reset_password" | "unlock_sign_in" | "match_payment" | "resend_message";
+
+export interface AdminAction {
+  id: string;
+  kind: AdminActionKind;
+  /** The proposal as the AI made it (validated again when approved). */
+  input: Record<string, unknown>;
+  /** One line for the approval card, e.g. "Change James Kamau's phone to +254712345678". */
+  summary: string;
+  /** Why the AI proposes it. */
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "failed";
+  /** What happened when it ran (never contains passwords). */
+  result: string | null;
+  proposedAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+}
+
+/** A new feature the administrator wants, written up by the admin AI. */
+export interface FeatureRequest {
+  id: string;
+  title: string;
+  problem: string;
+  proposal: string;
+  status: "new" | "sent" | "done";
+  createdAt: string;
+  createdBy: string;
 }
 
 /** How an M-Pesa payment was linked to a learner. */

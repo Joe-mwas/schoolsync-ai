@@ -32,6 +32,8 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     fees: [],
     facts: [],
     mpesaPayments: [],
+    adminActions: [],
+    featureRequests: [],
   };
 }
 
@@ -124,6 +126,8 @@ export function seedDatabase(): Database {
       demoFact("fact-staff", "Policies", "Staff meetings", "Staff meeting every Monday at 4:00 PM in the staffroom.", "staff"),
     ],
     mpesaPayments: [],
+    adminActions: [],
+    featureRequests: [],
   };
 }
 
