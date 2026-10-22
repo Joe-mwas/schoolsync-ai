@@ -1,23 +1,40 @@
-export const ROLES = ["admin", "director", "secretary", "teacher", "parent", "student"] as const;
+export const ROLES = ["admin", "director", "headteacher", "secretary", "teacher", "parent", "student"] as const;
 export type Role = (typeof ROLES)[number];
 
-/**
- * Run the school: people, classes, imports, backups, plus everything the
- * office does. The admin also owns Setup and AI review.
+/*
+ * Chain of command: administrator (system owner) → director → headteacher
+ * (education) → secretary (office) → teacher. Each group below names who
+ * may do one kind of thing.
  */
+
+/** Run the school: backups and every kind of account. The admin also owns Setup and AI review. */
 export const LEADERS: Role[] = ["admin", "director"];
-/**
- * The school office: fees and M-Pesa, school-wide announcements and the
- * WhatsApp inbox, events, school facts, the brief, and viewing all results.
- */
+/** Manage people and classes: the headteacher only teachers, learners and parents (see canManageRole). */
+export const PEOPLE_MANAGERS: Role[] = ["admin", "director", "headteacher"];
+/** Record fees and payments, school facts. */
 export const OFFICE: Role[] = ["admin", "director", "secretary"];
+/** See fees and balances (the headteacher can't change them). */
+export const FEE_VIEWERS: Role[] = ["admin", "director", "headteacher", "secretary"];
+/** Whole-school view: any class, school-wide announcements, events, the WhatsApp inbox, the brief. */
+export const SCHOOL_WIDE: Role[] = ["admin", "director", "headteacher", "secretary"];
+/** Assign duties to teachers. */
+export const DUTY_MANAGERS: Role[] = ["admin", "director", "headteacher"];
 /** Can publish announcements, design posters and open the Results page. */
-export const STAFF: Role[] = ["admin", "director", "secretary", "teacher"];
+export const STAFF: Role[] = ["admin", "director", "headteacher", "secretary", "teacher"];
 /** Who announcements can be addressed to. */
 export const AUDIENCE_ROLES: Role[] = ["teacher", "parent", "student"];
 
 export const isLeader = (role: Role): boolean => role === "admin" || role === "director";
 export const isOffice = (role: Role): boolean => OFFICE.includes(role);
+export const isSchoolWide = (role: Role): boolean => SCHOOL_WIDE.includes(role);
+
+/** Which accounts each role may add, edit or remove. */
+export function canManageRole(actor: Role, target: Role | string): boolean {
+  if (actor === "admin") return true;
+  if (actor === "director") return target !== "admin";
+  if (actor === "headteacher") return target === "teacher" || target === "student" || target === "parent";
+  return false;
+}
 
 export interface User {
   id: string;
@@ -38,7 +55,7 @@ export interface User {
   lastBriefAt?: string | null;
   /** Learners: the school's admission number, used as the M-Pesa account number. */
   admissionNo?: string | null;
-  /** Directors: the Nairobi date (YYYY-MM-DD) the last automatic morning brief went out. */
+  /** Director and headteacher: the Nairobi date (YYYY-MM-DD) the last automatic morning brief went out. */
   morningBriefDate?: string | null;
 }
 
@@ -108,7 +125,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -219,6 +236,23 @@ export interface Database {
   adminActions: AdminAction[];
   featureRequests: FeatureRequest[];
   forwardedQuestions: ForwardedQuestion[];
+  duties: Duty[];
+}
+
+/** A duty the headteacher (or director) gives one or more teachers, e.g. "Duty teacher this week". */
+export interface Duty {
+  id: string;
+  title: string;
+  details: string;
+  teacherIds: string[];
+  /** Optional dates (YYYY-MM-DD). */
+  startDate: string | null;
+  endDate: string | null;
+  status: "open" | "done";
+  createdBy: string;
+  createdAt: string;
+  doneAt: string | null;
+  doneBy: string | null;
 }
 
 /** A system question a director asked the School AI, passed to the administrator. */

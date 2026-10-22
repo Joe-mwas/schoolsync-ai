@@ -5,10 +5,10 @@ import BackupsCard from "./BackupsCard";
 import ImportCard from "./ImportCard";
 import PeopleTable from "./PeopleTable";
 import SchoolForms from "./SchoolForms";
-import { LEADERS } from "@/lib/types";
+import { PEOPLE_MANAGERS } from "@/lib/types";
 
 export default async function SchoolPage() {
-  const me = await requireUser(LEADERS);
+  const me = await requireUser(PEOPLE_MANAGERS);
   const db = await readDb();
   const snapshots = await listSnapshots(backupDirectory());
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
@@ -29,7 +29,7 @@ export default async function SchoolPage() {
         classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}
         students={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: u.name }))}
         teachers={db.users.filter((u) => u.role === "teacher").map((u) => ({ id: u.id, name: u.name }))}
-        canCreateAdmin={me.role === "admin"}
+        myRole={me.role}
       />
 
       <div className="card">
@@ -59,7 +59,7 @@ export default async function SchoolPage() {
         currentUserRole={me.role}
       />
 
-      <BackupsCard initial={snapshots} />
+      {(me.role === "admin" || me.role === "director") && <BackupsCard initial={snapshots} />}
     </div>
   );
 }

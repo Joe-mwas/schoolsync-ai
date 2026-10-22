@@ -1,12 +1,12 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
 import { assertCanManage, setPassword } from "@/lib/users";
-import { LEADERS } from "@/lib/types";
+import { PEOPLE_MANAGERS } from "@/lib/types";
 
 /** Director sets a temporary password; the person must change it at next sign-in. */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const actor = await requireApiUser(LEADERS);
+    const actor = await requireApiUser(PEOPLE_MANAGERS);
     const { id } = await params;
     if (id === actor.id) throw new HttpError(400, "Change your own password from My account");
     const { password } = (await req.json().catch(() => ({}))) as { password?: string };

@@ -1,11 +1,11 @@
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { handleInboundMessage } from "@/lib/inbound";
-import { OFFICE } from "@/lib/types";
+import { SCHOOL_WIDE } from "@/lib/types";
 
 /** Lets a director test the inbound flow without a real WhatsApp number. */
 export async function POST(req: Request) {
   try {
-    await requireApiUser(OFFICE);
+    await requireApiUser(SCHOOL_WIDE);
     const { from, body } = (await req.json().catch(() => ({}))) as { from?: string; body?: string };
     if (!from?.trim() || !body?.trim()) throw new HttpError(400, "Phone number and message are required");
     const reply = await handleInboundMessage(from, body.trim());

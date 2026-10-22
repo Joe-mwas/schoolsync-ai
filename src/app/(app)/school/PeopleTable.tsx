@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/permissions";
-import type { PublicUser, Role } from "@/lib/types";
+import { canManageRole, type PublicUser, type Role } from "@/lib/types";
 
 interface Option {
   id: string;
@@ -107,7 +107,7 @@ export default function PeopleTable({
                       : p.classIds.map((id) => classNames.get(id)).join(", ") || "—"}
                   </td>
                   <td>
-                    {(p.role !== "admin" || currentUserRole === "admin") && (
+                    {canManageRole(currentUserRole, p.role) && (
                     <div className="row" style={{ gap: "0.4rem", flexWrap: "nowrap" }}>
                       <button className="secondary small" onClick={() => setEditing(p.id)}>Edit</button>
                       {p.id !== currentUserId && (
@@ -172,7 +172,7 @@ function EditPerson({
         <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
         <label>
           Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role === "admin" || person.role === "director" || person.role === "secretary" || person.role === "teacher"} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={person.role !== "parent" && person.role !== "student"} />
         </label>
         <label>WhatsApp phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2547…" /></label>
       </div>

@@ -1,14 +1,15 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { currencyLabel, feeStatement } from "@/lib/fees";
-import { OFFICE } from "@/lib/types";
+import { FEE_VIEWERS, isOffice } from "@/lib/types";
 import { darajaConfig, mpesaReceiving } from "@/lib/daraja";
 import FeesManager from "./FeesManager";
 import MpesaCard from "./MpesaCard";
 import RemindersCard from "./RemindersCard";
 
 export default async function FeesPage() {
-  await requireUser(OFFICE);
+  const me = await requireUser(FEE_VIEWERS);
+  const canEdit = isOffice(me.role);
   const db = await readDb();
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
   const learners = db.users
@@ -32,6 +33,8 @@ export default async function FeesPage() {
           <p>Balances, statements and payments. M-Pesa Paybill payments are recorded automatically. Parents see their balance on WhatsApp (reply 2) and on their dashboard.</p>
         </div>
       </div>
+      {!canEdit && <div className="notice small">You can see every balance and statement. Payments and charges are recorded by the director or the secretary.</div>}
+      {canEdit && (
       <MpesaCard
         status={mpesaReceiving() ? (darajaConfig().sandbox ? "sandbox" : "live") : "off"}
         paybill={darajaConfig().shortCode}
@@ -40,8 +43,9 @@ export default async function FeesPage() {
         names={Object.fromEntries(learners.map((l) => [l.id, l.name]))}
         payments={[...db.mpesaPayments].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).filter((p, i) => p.status === "unmatched" || i < 50)}
       />
-      <RemindersCard classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} last={last} />
-      <FeesManager learners={learners} classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} defaultTerm={defaultTerm} />
+      )}
+      {canEdit && <RemindersCard classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} last={last} />}
+      <FeesManager learners={learners} classes={db.classes.map((c) => ({ id: c.id, name: c.name }))} currency={currencyLabel()} defaultTerm={defaultTerm} readOnly={!canEdit} />
     </div>
   );
 }

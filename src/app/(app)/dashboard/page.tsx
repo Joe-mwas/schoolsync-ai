@@ -10,7 +10,8 @@ import BriefCard from "@/components/BriefCard";
 import { describeLevel } from "@/lib/cbc";
 import { feeStatement, formatMoney } from "@/lib/fees";
 import { studentReport } from "@/lib/results";
-import { isOffice } from "@/lib/types";
+import { dutiesFor, dutyWhen } from "@/lib/duties";
+import { isSchoolWide } from "@/lib/types";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -126,6 +127,15 @@ function TeacherDashboard({ user, db }: { user: User; db: Database }) {
   const students = db.users.filter((u) => u.role === "student" && u.classIds.some((id) => user.classIds.includes(id)));
   return (
     <>
+      {(() => {
+        const mine = dutiesFor(db, user).filter((d) => d.status === "open");
+        return mine.length ? (
+          <Link href="/duties" className="card stack" style={{ color: "inherit", gap: 4 }}>
+            <strong>📋 My duties ({mine.length})</strong>
+            {mine.slice(0, 3).map((d) => <span key={d.id} className="small">{d.title}{dutyWhen(d) ? <span className="muted"> · {dutyWhen(d)}</span> : null}</span>)}
+          </Link>
+        ) : null;
+      })()}
       <div className="grid grid-3">
         <Stat label="My classes" value={myClasses.length} />
         <Stat label="My students" value={students.length} />
@@ -263,7 +273,7 @@ export default async function DashboardPage() {
           <p>{ROLE_LABELS[user.role]} dashboard</p>
         </div>
       </div>
-      {isOffice(user.role) && <DirectorDashboard user={user} db={db} />}
+      {isSchoolWide(user.role) && <DirectorDashboard user={user} db={db} />}
       {user.role === "teacher" && <TeacherDashboard user={user} db={db} />}
       {(user.role === "parent" || user.role === "student") && <FamilyDashboard user={user} db={db} />}
     </div>

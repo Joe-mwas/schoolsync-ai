@@ -3,9 +3,9 @@ import { HttpError } from "./errors.ts";
 import { parseCsv } from "./importer.ts";
 import { isLeader, type Database, type ResultEntry, type User } from "./types.ts";
 
-/** Teachers record results for their own classes; leaders for any class. */
+/** Teachers record results for their own classes; leaders and the headteacher for any class. */
 export function canEditResults(user: User, classId: string): boolean {
-  return isLeader(user.role) || (user.role === "teacher" && user.classIds.includes(classId));
+  return isLeader(user.role) || user.role === "headteacher" || (user.role === "teacher" && user.classIds.includes(classId));
 }
 
 /** The secretary can also see every class's results, without changing them. */

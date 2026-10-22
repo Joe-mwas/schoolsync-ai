@@ -139,12 +139,12 @@ export function setupChecklist(env: Env, facts: SetupFacts): SetupSection[] {
   const brief = morningBriefConfig(env);
   whatsapp.push({
     id: "morning_brief",
-    label: "Directors' morning brief",
+    label: "Morning brief (director and headteacher)",
     envVar: "MORNING_BRIEF_TIME",
     recommended: true,
     ...(brief
-      ? { status: "ok", detail: `Sent to each director's WhatsApp at ${brief.label} Nairobi time, ${brief.weekdaysOnly ? "Monday to Friday" : "every day"} (set MORNING_BRIEF_TIME, e.g. 06:30, or "off"; MORNING_BRIEF_DAYS=daily for weekends too). Directors need a WhatsApp number on their account.` }
-      : { status: "optional", detail: "Off. Set MORNING_BRIEF_TIME (e.g. 07:00) to send directors a brief each morning." }),
+      ? { status: "ok", detail: `Sent to the director's and headteacher's WhatsApp at ${brief.label} Nairobi time, ${brief.weekdaysOnly ? "Monday to Friday" : "every day"} (set MORNING_BRIEF_TIME, e.g. 06:30, or "off"; MORNING_BRIEF_DAYS=daily for weekends too). They need a WhatsApp number on their account.` }
+      : { status: "optional", detail: "Off. Set MORNING_BRIEF_TIME (e.g. 07:00) to send the director and headteacher a brief each morning." }),
   });
 
   // M-Pesa is optional: nothing is "missing" until the school starts setting it up.

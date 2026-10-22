@@ -15,13 +15,13 @@ export default async function AdminAiPage() {
           <p>
             Your private helper for running SchoolSync. Describe a problem (&quot;James didn&apos;t get the fee reminder&quot;, &quot;a parent
             can&apos;t sign in&quot;) and it investigates, explains, and proposes fixes that only happen when you click <strong>Approve</strong>.
-            It can also write up new features you want, and shows system questions directors forwarded to you. Only the administrator can see this page.
+            It can also write up new features you want, and shows system questions the director or headteacher forwarded to you. Only the administrator can see this page.
           </p>
         </div>
       </div>
       {!me.phone && (
         <div className="notice small">
-          Add your WhatsApp number under <strong>My account</strong> to also receive directors&apos; questions on WhatsApp.
+          Add your WhatsApp number under <strong>My account</strong> to also receive forwarded questions on WhatsApp.
         </div>
       )}
       {!aiConfigured() ? (

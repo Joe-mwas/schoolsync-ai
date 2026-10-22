@@ -1,4 +1,4 @@
-import { isOffice, type Announcement, type Database, type Role, type User } from "./types.ts";
+import { isSchoolWide, type Announcement, type Database, type Role, type User } from "./types.ts";
 
 /** Class ids relevant to a user: taught, attended, or attended by their children. */
 export function userClassIds(user: User, db: Pick<Database, "users">): string[] {
@@ -9,7 +9,7 @@ export function userClassIds(user: User, db: Pick<Database, "users">): string[] 
 }
 
 export function canSeeAnnouncement(user: User, a: Announcement, db: Pick<Database, "users">): boolean {
-  if (isOffice(user.role) || a.authorId === user.id) return true;
+  if (isSchoolWide(user.role) || a.authorId === user.id) return true;
   if (!a.audience.includes(user.role)) return false;
   return a.classId === null || userClassIds(user, db).includes(a.classId);
 }
@@ -21,18 +21,18 @@ export function visibleAnnouncements(user: User, db: Pick<Database, "users" | "a
 }
 
 export function canPublish(user: User): boolean {
-  return isOffice(user.role) || user.role === "teacher";
+  return isSchoolWide(user.role) || user.role === "teacher";
 }
 
-/** The office may target anything; teachers only their own classes. */
+/** The school-wide team may target anything; teachers only their own classes. */
 export function canTargetClass(user: User, classId: string | null): boolean {
-  if (isOffice(user.role)) return true;
+  if (isSchoolWide(user.role)) return true;
   if (user.role === "teacher") return classId !== null && user.classIds.includes(classId);
   return false;
 }
 
 export function canManageAnnouncement(user: User, a: Announcement): boolean {
-  return isOffice(user.role) || a.authorId === user.id;
+  return isSchoolWide(user.role) || a.authorId === user.id;
 }
 
 /** Users with a phone number who are in an announcement's audience. */
@@ -47,6 +47,7 @@ export function whatsappRecipients(a: Announcement, db: Pick<Database, "users">)
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Administrator",
   director: "Director",
+  headteacher: "Headteacher",
   secretary: "Secretary",
   teacher: "Teacher",
   parent: "Parent",

@@ -38,7 +38,7 @@ test("fees, families, events and parent messages", () => {
   assert.ok(!JSON.stringify(ev).includes("passwordHash"));
 });
 
-test("only the administrator and directors can use the AI page", async () => {
+test("only the administrator, director and headteacher can use the AI pages", async () => {
   const db = seedDatabase();
   await assert.rejects(runAdminTurn(db.users.find((u) => u.role === "teacher")!, [{ role: "user", text: "hi" }]), /Not allowed/);
   await assert.rejects(runAdminTurn(db.users.find((u) => u.role === "secretary")!, [{ role: "user", text: "hi" }]), /Not allowed/);
@@ -55,12 +55,14 @@ test("morning brief timing: Nairobi time, weekdays, once a day, directors with W
   const cfg = morningBriefConfig({});
   const at = (iso: string) => dueForMorningBrief(db, cfg, Date.parse(iso)).map((u) => u.id);
   assert.deepEqual(at("2026-10-14T03:59:00Z"), [], "06:59 Nairobi: too early");
-  assert.deepEqual(at("2026-10-14T04:00:00Z"), ["u-director"], "07:00 Nairobi on a Wednesday");
+  assert.deepEqual(at("2026-10-14T04:00:00Z"), ["u-director", "u-headteacher"], "07:00 Nairobi on a Wednesday");
   assert.deepEqual(at("2026-10-14T09:00:00Z"), [], "noon: too late, wait for tomorrow");
   assert.deepEqual(at("2026-10-17T05:00:00Z"), [], "Saturday");
-  assert.deepEqual(dueForMorningBrief(db, morningBriefConfig({ MORNING_BRIEF_DAYS: "daily" }), Date.parse("2026-10-17T05:00:00Z")).map((u) => u.id), ["u-director"]);
+  assert.deepEqual(dueForMorningBrief(db, morningBriefConfig({ MORNING_BRIEF_DAYS: "daily" }), Date.parse("2026-10-17T05:00:00Z")).map((u) => u.id), ["u-director", "u-headteacher"]);
   db.users.find((u) => u.id === "u-director")!.morningBriefDate = "2026-10-14";
-  assert.deepEqual(at("2026-10-14T05:00:00Z"), [], "already sent today");
+  assert.deepEqual(at("2026-10-14T05:00:00Z"), ["u-headteacher"], "the director already had today's");
+  db.users.find((u) => u.id === "u-headteacher")!.phone = undefined;
+  assert.deepEqual(at("2026-10-14T05:00:00Z"), [], "no WhatsApp number, nothing to send");
   assert.deepEqual(dueForMorningBrief(db, null, Date.parse("2026-10-14T05:00:00Z")), [], "off");
   const item = setupChecklist({}, { lastBackupAt: null }).flatMap((s) => s.items).find((i) => i.id === "morning_brief")!;
   assert.match(item.detail, /07:00 Nairobi time, Monday to Friday/);
@@ -72,11 +74,11 @@ test("the morning brief goes to the director's WhatsApp once", async () => {
   resetDbCache();
   await readDb();
   const now = Date.parse("2026-10-14T04:10:00Z");
-  assert.equal(await morningBriefTick(now, {}), 1);
+  assert.equal(await morningBriefTick(now, {}), 2, "director and headteacher");
   const db = await readDb();
   const sent = db.whatsappMessages.filter((m) => m.purpose === "morning-brief");
   assert.ok(sent.length >= 1);
-  assert.equal(sent[0].userId, "u-director");
+  assert.deepEqual([...new Set(sent.map((m) => m.userId))].sort(), ["u-director", "u-headteacher"]);
   assert.match(sent[0].body, /^☀️ Good morning!/);
   assert.equal(db.users.find((u) => u.id === "u-director")!.morningBriefDate, "2026-10-14");
   assert.equal(await morningBriefTick(now + 5 * 60_000, {}), 0, "not twice");
