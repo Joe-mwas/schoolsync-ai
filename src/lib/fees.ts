@@ -154,6 +154,19 @@ export interface FeesImportReport {
  * the term, so re-uploading the latest sheet is safe. Payments recorded by
  * hand in SchoolSync are kept separately.
  */
+/** An optional Date column: 2026-02-14 or 14/02/2026 (day first, as in Kenya). Blank means today. */
+export function importDate(raw: string): string | undefined {
+  if (!raw) return undefined;
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(raw);
+  const ymd = m ? [m[1], m[2], m[3]] : (m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(raw)) ? [m[3], m[2], m[1]] : null;
+  if (ymd) {
+    const iso = `${ymd[0]}-${ymd[1].padStart(2, "0")}-${ymd[2].padStart(2, "0")}`;
+    const t = Date.parse(`${iso}T00:00:00Z`);
+    if (!Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === iso) return iso;
+  }
+  throw new HttpError(400, `"${raw}" isn't a date (use 2026-02-14 or 14/02/2026)`);
+}
+
 export function importFees(db: Database, actor: User, csv: string): FeesImportReport {
   const table = parseCsv(csv);
   if (table.length < 2) throw new HttpError(400, "The file has no rows below the headings");
@@ -165,6 +178,7 @@ export function importFees(db: Database, actor: User, csv: string): FeesImportRe
     term: col(["term"]),
     charged: col(["fees", "charged", "feescharged", "amountdue", "totalfees", "fee", "billed"]),
     paid: col(["paid", "amountpaid", "totalpaid", "payments"]),
+    date: col(["date", "datepaid", "paymentdate", "paidon"]),
   };
   if (c.student < 0 || c.cls < 0 || c.term < 0 || (c.charged < 0 && c.paid < 0)) {
     throw new HttpError(400, 'The first row needs "Student name", "Class", "Term", and "Fees" and/or "Paid" columns');
@@ -181,13 +195,14 @@ export function importFees(db: Database, actor: User, csv: string): FeesImportRe
       if (!student) throw new HttpError(400, `No learner called "${row.student}" in ${cls.name}`);
       const term = cell("term");
       if (!term) throw new HttpError(400, "Term is missing");
+      const date = importDate(cell("date"));
       const fresh: FeeEntry[] = [];
       for (const kind of ["charged", "paid"] as const) {
         const raw = cell(kind);
         if (!raw) continue;
         const amount = parseAmount(raw);
         if (amount === null) throw new HttpError(400, `"${raw}" isn't an amount`);
-        if (amount > 0) fresh.push(validEntry(db, actor, { studentId: student.id, kind: kind === "charged" ? "charge" : "payment", amount, term }, "import"));
+        if (amount > 0) fresh.push(validEntry(db, actor, { studentId: student.id, kind: kind === "charged" ? "charge" : "payment", amount, term, date }, "import"));
       }
       db.fees = db.fees.filter((f) => !(f.source === "import" && f.studentId === student.id && f.term === term)).concat(fresh);
       report.updated++;

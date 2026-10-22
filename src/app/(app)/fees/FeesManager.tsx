@@ -105,7 +105,7 @@ export default function FeesManager({
         title="Upload fees from a spreadsheet"
         description={
           <>
-            Columns: <strong>Student name</strong>, <strong>Class</strong>, <strong>Term</strong>, <strong>Fees</strong> (charged) and/or <strong>Paid</strong>.
+            Columns: <strong>Student name</strong>, <strong>Class</strong>, <strong>Term</strong>, <strong>Fees</strong> (charged) and/or <strong>Paid</strong>, and optionally <strong>Date</strong> (e.g. 14/02/2026; blank means today).
             Each row replaces that learner&apos;s uploaded totals for the term, so you can upload the latest sheet from your fees system again and again.
             Payments recorded by hand here are kept on top, so for each term use either uploads or hand entry for payments, not both.
           </>
