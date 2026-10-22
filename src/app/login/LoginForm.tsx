@@ -80,7 +80,7 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
         }}
       >
         <label>
-          I am the…
+          Role
           <select value={role} onChange={(e) => { setRole(e.target.value as Role); setError(null); }} required>
             <option value="" disabled>Choose your role</option>
             {ROLE_CHOICES.map((c) => <option key={c.role} value={c.role}>{c.label}</option>)}
