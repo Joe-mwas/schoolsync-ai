@@ -35,6 +35,7 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"signin" | "forgot" | "sent">("signin");
 
   // Remember the role picked last time on this device (a convenience only).
   useEffect(() => {
@@ -70,10 +71,14 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
     setBusy(false);
   }
 
+  if (mode !== "signin") {
+    return <ForgotPassword role={role} contact={email} sent={mode === "sent"} onSent={() => setMode("sent")} onBack={() => setMode("signin")} />;
+  }
+
   return (
-    <div className="stack">
+    <div className="auth-stack">
       <form
-        className="stack"
+        className="auth-form"
         onSubmit={(ev) => {
           ev.preventDefault();
           if (role) signIn(role, email, password);
@@ -102,17 +107,19 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
         </label>
         {error && <div className="error">{error}</div>}
-        <button type="submit" disabled={busy || !role}>{busy ? "Signing in…" : "Sign in"}</button>
-        {role !== "admin" && (
-          <div className="small muted">Forgot your password? Ask the school office to reset it.</div>
-        )}
+        <div className="auth-actions">
+          <button type="submit" disabled={busy || !role}>{busy ? "Signing in…" : "Sign in"}</button>
+          {role !== "admin" && (
+            <button type="button" className="link" onClick={() => setMode("forgot")}>Forgot your password?</button>
+          )}
+        </div>
       </form>
       {demoPassword && (
-        <div className="stack">
+        <div className="auth-demo">
           <div className="small muted">Try a demo account (password: <code>{demoPassword}</code>)</div>
           <div className="demo-accounts">
             {DEMO.map((d) => (
-              <button key={d.email} type="button" className="secondary" disabled={busy} onClick={() => signIn(d.role, d.email, demoPassword)}>
+              <button key={d.email} type="button" className="secondary small" disabled={busy} onClick={() => signIn(d.role, d.email, demoPassword)}>
                 {ROLE_CHOICES.find((c) => c.role === d.role)!.label}
               </button>
             ))}
@@ -120,5 +127,71 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
         </div>
       )}
     </div>
+  );
+}
+
+/** Ask the administrator for a new password. The reply is the same whether or not the details match an account. */
+function ForgotPassword({ role: initialRole, contact: initialContact, sent, onSent, onBack }: { role: Role | ""; contact: string; sent: boolean; onSent: () => void; onBack: () => void }) {
+  const [role, setRole] = useState<Role | "">(initialRole === "admin" ? "" : initialRole);
+  const [contact, setContact] = useState(initialContact);
+  const [name, setName] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (sent) {
+    return (
+      <div className="auth-stack">
+        <div className="auth-success">
+          <strong>Request sent ✅</strong>
+          <p>The school&apos;s administrator has your details and will set you a temporary password, then contact you. Sign in with it and choose your own password.</p>
+        </div>
+        <div className="auth-actions"><button type="button" className="secondary" onClick={onBack}>Back to sign in</button></div>
+      </div>
+    );
+  }
+
+  async function send(ev: React.FormEvent) {
+    ev.preventDefault();
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/auth/forgot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, contact, name, note }) });
+    const data = await res.json().catch(() => null);
+    setBusy(false);
+    if (res.ok) return onSent();
+    setError(data?.error ?? "Couldn't send your request. Please try again.");
+  }
+
+  return (
+    <form className="auth-form" onSubmit={send}>
+      <div>
+        <h2 className="auth-subtitle">Forgot your password?</h2>
+        <p className="muted small" style={{ margin: 0 }}>Leave your details and the school&apos;s administrator will set you a new one.</p>
+      </div>
+      <label>
+        Role
+        <select value={role} onChange={(e) => setRole(e.target.value as Role)} required>
+          <option value="" disabled>Choose your role</option>
+          {ROLE_CHOICES.filter((c) => c.role !== "admin").map((c) => <option key={c.role} value={c.role}>{c.label}</option>)}
+        </select>
+      </label>
+      <label>
+        Your name
+        <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} autoComplete="name" placeholder="e.g. Peter Otieno" />
+      </label>
+      <label>
+        Email or phone you sign in with
+        <input value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={120} autoComplete="username" placeholder="you@example.com or 0712 345 678" />
+      </label>
+      <label>
+        Anything else? (optional)
+        <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="e.g. I'm the Grade 7 East class teacher" />
+      </label>
+      {error && <div className="error">{error}</div>}
+      <div className="auth-actions">
+        <button type="submit" disabled={busy}>{busy ? "Sending…" : "Send request"}</button>
+        <button type="button" className="link" onClick={onBack}>Back to sign in</button>
+      </div>
+    </form>
   );
 }

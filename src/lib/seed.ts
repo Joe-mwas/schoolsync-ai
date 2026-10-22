@@ -37,6 +37,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     forwardedQuestions: [],
     duties: [],
     assignments: [],
+    passwordHelp: [],
   };
 }
 
@@ -176,6 +177,7 @@ export function seedDatabase(): Database {
         doneBy: [],
       },
     ],
+    passwordHelp: [],
   };
 }
 
