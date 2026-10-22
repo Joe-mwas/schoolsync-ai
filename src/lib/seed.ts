@@ -34,6 +34,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     mpesaPayments: [],
     adminActions: [],
     featureRequests: [],
+    forwardedQuestions: [],
   };
 }
 
@@ -128,6 +129,7 @@ export function seedDatabase(): Database {
     mpesaPayments: [],
     adminActions: [],
     featureRequests: [],
+    forwardedQuestions: [],
   };
 }
 

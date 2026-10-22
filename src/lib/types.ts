@@ -38,6 +38,8 @@ export interface User {
   lastBriefAt?: string | null;
   /** Learners: the school's admission number, used as the M-Pesa account number. */
   admissionNo?: string | null;
+  /** Directors: the Nairobi date (YYYY-MM-DD) the last automatic morning brief went out. */
+  morningBriefDate?: string | null;
 }
 
 export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
@@ -106,7 +108,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -216,6 +218,20 @@ export interface Database {
   mpesaPayments: MpesaPayment[];
   adminActions: AdminAction[];
   featureRequests: FeatureRequest[];
+  forwardedQuestions: ForwardedQuestion[];
+}
+
+/** A system question a director asked the School AI, passed to the administrator. */
+export interface ForwardedQuestion {
+  id: string;
+  fromId: string;
+  fromName: string;
+  question: string;
+  /** What the AI understood, for context. */
+  details: string;
+  status: "open" | "answered";
+  createdAt: string;
+  answeredAt: string | null;
 }
 
 /** Changes the admin AI can propose; each runs only when the administrator approves it. */

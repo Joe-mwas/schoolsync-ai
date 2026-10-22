@@ -13,7 +13,7 @@ export default function Nav({ items }: { items: NavItem[] }) {
   return (
     <nav className="nav">
       {items.map((item) => (
-        <Link key={item.href} href={item.href} className={pathname.startsWith(item.href) ? "active" : undefined}>
+        <Link key={item.href} href={item.href} className={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "active" : undefined}>
           {item.label}
         </Link>
       ))}

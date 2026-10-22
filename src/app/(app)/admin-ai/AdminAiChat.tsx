@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AdminAction, FeatureRequest } from "@/lib/types";
+import type { AdminAction, FeatureRequest, ForwardedQuestion } from "@/lib/types";
 
 interface Turn {
   role: "user" | "assistant" | "note";
@@ -9,6 +9,14 @@ interface Turn {
   actionIds?: string[];
   featureIds?: string[];
 }
+
+const DIRECTOR_SUGGESTIONS = [
+  "How much fees have we collected this week?",
+  "Which classes owe the most?",
+  "What are parents asking about?",
+  "What events are coming up?",
+  "Find the parents of Brian Kamau",
+];
 
 const SUGGESTIONS = [
   "Check SchoolSync for problems",
@@ -31,7 +39,21 @@ function featureText(f: FeatureRequest) {
   return `Feature request for SchoolSync: ${f.title}\n\nWhat the school needs:\n${f.problem}\n\nHow it could work:\n${f.proposal}`;
 }
 
-export default function AdminAiChat({ pending, recent, featureRequests }: { pending: AdminAction[]; recent: AdminAction[]; featureRequests: FeatureRequest[] }) {
+export default function AdminAiChat({
+  mode = "admin",
+  pending,
+  recent,
+  featureRequests,
+  forwarded,
+}: {
+  mode?: "admin" | "director";
+  pending: AdminAction[];
+  recent: AdminAction[];
+  featureRequests: FeatureRequest[];
+  forwarded: ForwardedQuestion[];
+}) {
+  const isAdmin = mode === "admin";
+  const [questions, setQuestions] = useState<ForwardedQuestion[]>(forwarded);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,7 +87,8 @@ export default function AdminAiChat({ pending, recent, featureRequests }: { pend
       const newFeatures: FeatureRequest[] = data.featureRequests ?? [];
       setActions((a) => ({ ...a, ...Object.fromEntries(newActions.map((x) => [x.id, x])) }));
       setFeatures((f) => [...newFeatures, ...f]);
-      setTurns([...next, { role: "assistant", text: data.reply, actionIds: newActions.map((x) => x.id), featureIds: newFeatures.map((x) => x.id) }]);
+      const sentOn = (data.forwarded ?? []).length ? [{ role: "note" as const, text: "↪ Forwarded to the administrator." }] : [];
+      setTurns([...next, { role: "assistant", text: data.reply, actionIds: newActions.map((x) => x.id), featureIds: newFeatures.map((x) => x.id) }, ...sentOn]);
     } catch {
       setTurns([...next, { role: "assistant", text: "Network error. Please try again." }]);
     } finally {
@@ -87,6 +110,11 @@ export default function AdminAiChat({ pending, recent, featureRequests }: { pend
     if (data.temporaryPassword) setPasswords((p) => ({ ...p, [done.id]: data.temporaryPassword }));
     const verb = done.status === "approved" ? "Approved" : done.status === "rejected" ? "Rejected" : "Approved but failed";
     setTurns((t) => [...t, { role: "note", text: `${verb}: ${done.summary}. ${done.result ?? ""}`.trim() }]);
+  }
+
+  async function setQuestionStatus(q: ForwardedQuestion, status: ForwardedQuestion["status"]) {
+    const res = await fetch(`/api/admin-ai/questions/${q.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    if (res.ok) setQuestions((list) => list.map((x) => (x.id === q.id ? { ...x, status } : x)));
   }
 
   async function setFeatureStatus(f: FeatureRequest, status: FeatureRequest["status"]) {
@@ -139,7 +167,7 @@ export default function AdminAiChat({ pending, recent, featureRequests }: { pend
             <div className="stack">
               <p className="muted">Describe a problem in your own words, or try:</p>
               <div className="suggestions">
-                {SUGGESTIONS.map((s) => <button key={s} className="secondary small" onClick={() => send(s)}>{s}</button>)}
+                {(isAdmin ? SUGGESTIONS : DIRECTOR_SUGGESTIONS).map((s) => <button key={s} className="secondary small" onClick={() => send(s)}>{s}</button>)}
               </div>
             </div>
           )}
@@ -164,20 +192,44 @@ export default function AdminAiChat({ pending, recent, featureRequests }: { pend
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-            placeholder="e.g. Ann Njeri says she never got the fee reminder"
+            placeholder={isAdmin ? "e.g. Ann Njeri says she never got the fee reminder" : "e.g. Who in Grade 7 still owes fees?"}
             rows={2}
           />
           <button type="submit" disabled={busy || !input.trim()}>Send</button>
         </form>
       </div>
 
-      {waiting.length > 0 && (
+      {isAdmin && questions.length > 0 && (
+        <div className="card stack">
+          <h2>Questions from directors ({questions.filter((q) => q.status === "open").length} open)</h2>
+          {questions.map((q) => (
+            <div key={q.id} className="stack" style={{ borderTop: "1px solid var(--border)", paddingTop: "0.6rem", gap: 4, opacity: q.status === "answered" ? 0.6 : 1 }}>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <strong>{q.fromName}</strong>
+                <span className="small muted">{when(q.createdAt)}</span>
+              </div>
+              <div style={{ whiteSpace: "pre-wrap" }}>{q.question}</div>
+              {q.details && <div className="small muted">{q.details}</div>}
+              <div>
+                {q.status === "open" ? (
+                  <button className="secondary small" onClick={() => setQuestionStatus(q, "answered")}>Mark answered</button>
+                ) : (
+                  <button className="link small" onClick={() => setQuestionStatus(q, "open")}>Answered · reopen</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isAdmin && waiting.length > 0 && (
         <div className="card stack">
           <h2>Waiting for your approval</h2>
           {waiting.map((a) => card(a.id))}
         </div>
       )}
 
+      {isAdmin && (
       <div className="card stack">
         <h2>Feature requests</h2>
         {features.length === 0 ? (
@@ -204,8 +256,9 @@ export default function AdminAiChat({ pending, recent, featureRequests }: { pend
           ))
         )}
       </div>
+      )}
 
-      {recent.length > 0 && (
+      {isAdmin && recent.length > 0 && (
         <details className="card">
           <summary style={{ cursor: "pointer", fontWeight: 600 }}>History of AI-proposed changes</summary>
           <ul className="list small">
