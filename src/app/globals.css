@@ -1,10 +1,11 @@
+/* Light ("soft white", easy on the eyes) is the default; people can switch to dark (see ThemeToggle). */
 :root {
-  --bg: #f6f7fb;
-  --surface: #ffffff;
-  --surface-2: #f0f2f8;
-  --border: #e2e5ee;
-  --text: #1b1f2a;
-  --muted: #5d6475;
+  --bg: #f1f2f0;
+  --surface: #fafaf7;
+  --surface-2: #eceee9;
+  --border: #dfe1db;
+  --text: #1d2129;
+  --muted: #5b6270;
   --primary: #2952cc;
   --primary-contrast: #ffffff;
   --accent: #0f9d76;
@@ -12,28 +13,29 @@
   --warning-bg: #fff4e0;
   --warning-text: #8a5300;
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #11141b;
-    --surface: #1a1e28;
-    --surface-2: #232837;
-    --border: #2e3446;
-    --text: #e8eaf0;
-    --muted: #9aa1b2;
-    --primary: #6d8cff;
-    --primary-contrast: #0c0f16;
-    --accent: #3ccf9f;
-    --danger: #ff7b7b;
-    --warning-bg: #3a2a10;
-    --warning-text: #ffc56b;
-    --shadow: none;
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --bg: #11141b;
+  --surface: #1a1e28;
+  --surface-2: #232837;
+  --border: #2e3446;
+  --text: #e8eaf0;
+  --muted: #9aa1b2;
+  --primary: #6d8cff;
+  --primary-contrast: #0c0f16;
+  --accent: #3ccf9f;
+  --danger: #ff7b7b;
+  --warning-bg: #3a2a10;
+  --warning-text: #ffc56b;
+  --shadow: none;
+  color-scheme: dark;
 }
+
+.theme-toggle { display: inline-flex; align-items: center; gap: 0.35rem; width: auto; padding: 0.35rem 0.7rem; font-size: 0.8rem; font-weight: 600; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 999px; }
+.theme-toggle:hover:not(:disabled) { filter: none; border-color: var(--primary); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

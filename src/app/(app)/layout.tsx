@@ -1,5 +1,7 @@
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
+import ThemeToggle from "@/components/ThemeToggle";
+import { currentTheme } from "@/lib/theme";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { ASSIGNMENT_SETTERS, DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS, POSTER_MAKERS, SCHOOL_WIDE, STAFF, WHATSAPP_INBOX, type Role } from "@/lib/types";
@@ -43,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="user-card">
             <strong>{user.name}</strong>
             {ROLE_LABELS[user.role]} · <SignOutButton />
+            <div style={{ marginTop: 8 }}><ThemeToggle initial={await currentTheme()} /></div>
           </div>
         </div>
       </aside>

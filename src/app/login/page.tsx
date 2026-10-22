@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { DEMO_PASSWORD } from "@/lib/seed";
 import LoginForm from "./LoginForm";
 import SchoolScene from "./SchoolScene";
+import ThemeToggle from "@/components/ThemeToggle";
+import { currentTheme } from "@/lib/theme";
 
 export default async function LoginPage() {
   if (await getCurrentUser()) redirect("/dashboard");
@@ -13,8 +15,11 @@ export default async function LoginPage() {
     <div className="auth">
       <section className="auth-panel">
         <div className="auth-inner">
-          <div className="brand">
-            <span className="brand-mark">S</span> SchoolSync AI
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div className="brand">
+              <span className="brand-mark">S</span> SchoolSync AI
+            </div>
+            <ThemeToggle initial={await currentTheme()} />
           </div>
           <div>
             {school && <div className="auth-school">{school}</div>}
