@@ -43,7 +43,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
 
 /** Demo data is used in development, or in production when SEED_DEMO=1. */
 export function initialDatabase(env: NodeJS.ProcessEnv = process.env): Database {
-  if (env.NODE_ENV !== "production" || env.SEED_DEMO === "1") return seedDatabase();
+  if (env.NODE_ENV !== "production" || env.SEED_DEMO === "1") return withDemoHistory(seedDatabase());
   const email = env.ADMIN_EMAIL?.trim();
   const password = env.ADMIN_PASSWORD;
   if (!email || !password || password.length < 8) {
@@ -52,6 +52,28 @@ export function initialDatabase(env: NodeJS.ProcessEnv = process.env): Database 
     );
   }
   return seedProductionDatabase({ name: env.ADMIN_NAME?.trim() || "Administrator", email, password });
+}
+
+/** Earlier exams and fully paid earlier terms, so the demo school's dashboard charts show a trend. */
+export function withDemoHistory(db: Database): Database {
+  const now = Date.now();
+  const iso = (offsetDays: number) => new Date(now + offsetDays * 86_400_000).toISOString();
+  db.results.push(
+      ...demoResults("u-student1", { English: "AE", Kiswahili: "BE", Mathematics: "ME", "Integrated Science": "AE", "Social Studies": "ME" }, "Term 1 2026 End-term", -200),
+      ...demoResults("u-student2", { English: "ME", Kiswahili: "AE", Mathematics: "BE", "Integrated Science": "BE", "Social Studies": "AE" }, "Term 1 2026 End-term", -200),
+      ...demoResults("u-student1", { English: "ME", Kiswahili: "AE", Mathematics: "ME", "Integrated Science": "ME", "Social Studies": "AE" }, "Term 2 2026 End-term", -90),
+      ...demoResults("u-student2", { English: "ME", Kiswahili: "ME", Mathematics: "AE", "Integrated Science": "AE", "Social Studies": "ME" }, "Term 2 2026 End-term", -90),
+  );
+  db.fees.push(
+      ...[["u-student1", "f-t1"], ["u-student2", "f-t2"]].flatMap(([sid, p]) => [
+        { ...demoFee(`${p}-c`, sid, "charge", 14000, iso(-200), null), term: "Term 2 2026" },
+        { ...demoFee(`${p}-1`, sid, "payment", 5000, iso(-170), null), term: "Term 2 2026" },
+        { ...demoFee(`${p}-2`, sid, "payment", 4000, iso(-140), null), term: "Term 2 2026" },
+        { ...demoFee(`${p}-3`, sid, "payment", 3000, iso(-110), null), term: "Term 2 2026" },
+        { ...demoFee(`${p}-4`, sid, "payment", 2000, iso(-75), null), term: "Term 2 2026" },
+      ]),
+  );
+  return db;
 }
 
 export function seedDatabase(): Database {
@@ -188,14 +210,14 @@ function demoFact(id: string, topic: Database["facts"][number]["topic"], title: 
 const DEMO_EXAM = "Term 3 2026 Mid-term";
 const DEMO_TERM = "Term 3 2026";
 
-function demoResults(studentId: string, levels: Record<string, string>): Database["results"] {
+function demoResults(studentId: string, levels: Record<string, string>, exam = DEMO_EXAM, offsetDays = -2): Database["results"] {
   return Object.entries(levels).map(([area, level], i) => ({
-    id: `r-${studentId}-${i}`,
+    id: exam === DEMO_EXAM ? `r-${studentId}-${i}` : `r-${studentId}-${exam.replace(/\W+/g, "")}-${i}`,
     studentId,
-    exam: DEMO_EXAM,
+    exam,
     area,
     level,
-    updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() + offsetDays * 86_400_000).toISOString(),
     updatedBy: null,
   }));
 }

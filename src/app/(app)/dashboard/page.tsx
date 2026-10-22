@@ -8,7 +8,9 @@ import type { Database, User } from "@/lib/types";
 import { whatsappConfigured } from "@/lib/whatsapp";
 import BriefCard from "@/components/BriefCard";
 import { describeLevel } from "@/lib/cbc";
-import { feeStatement, formatMoney, schoolFees } from "@/lib/fees";
+import { currencyLabel, feeStatement, formatMoney, schoolFees } from "@/lib/fees";
+import DashboardCharts from "@/components/charts/DashboardCharts";
+import { classLevels, feesByClass, monthlyCollections, performanceTrend } from "@/lib/charts";
 import { studentReport } from "@/lib/results";
 import { dutiesFor, dutyWhen } from "@/lib/duties";
 import { assignmentsFor } from "@/lib/assignments";
@@ -89,6 +91,12 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
             .map((r) => ({ id: r.id, name: r.name, contact: r.contact, role: r.role ? ROLE_LABELS[r.role] : null, note: r.note, account: describeAccount(db, r), matched: Boolean(r.userId && db.users.some((u) => u.id === r.userId)), createdAt: r.createdAt }))}
         />
       )}
+      {/* The director (and administrator) see every chart; the headteacher how classes perform; the secretary the money. */}
+      <DashboardCharts
+        currency={currencyLabel()}
+        {...(user.role !== "secretary" ? { trend: performanceTrend(db), levels: classLevels(db) } : {})}
+        {...(user.role !== "headteacher" ? { months: monthlyCollections(db), byClass: feesByClass(db) } : {})}
+      />
       <BriefCard />
       {user.role === "admin" && (
         <Link href="/ai-review?show=unreviewed" className="card row" style={{ justifyContent: "space-between", color: "inherit" }}>
