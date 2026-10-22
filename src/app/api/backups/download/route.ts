@@ -1,6 +1,7 @@
 import { gzipSync } from "node:zlib";
 import { errorResponse, requireApiUser } from "@/lib/auth";
-import { readSnapshot } from "@/lib/backup";
+import { backupIsEncrypted, readSnapshot } from "@/lib/backup";
+import { seal } from "@/lib/dataCrypto";
 import { backupDirectory, readDb } from "@/lib/db";
 import { ADMINS } from "@/lib/types";
 
@@ -9,11 +10,12 @@ export async function GET(req: Request) {
   try {
     await requireApiUser(ADMINS);
     const name = new URL(req.url).searchParams.get("name");
-    const body = name ? await readSnapshot(backupDirectory(), name) : gzipSync(JSON.stringify(await readDb()));
-    const filename = name ?? `schoolsync-${new Date().toISOString().slice(0, 10)}_current.json.gz`;
+    // Downloads stay encrypted when encryption is on: only this app (with its key) can restore them.
+    const body = name ? await readSnapshot(backupDirectory(), name) : seal(gzipSync(JSON.stringify(await readDb())));
+    const filename = `${name ?? `schoolsync-${new Date().toISOString().slice(0, 10)}_current.json.gz`}${backupIsEncrypted(body) ? ".enc" : ""}`;
     return new Response(new Uint8Array(body), {
       headers: {
-        "Content-Type": "application/gzip",
+        "Content-Type": backupIsEncrypted(body) ? "application/octet-stream" : "application/gzip",
         "Content-Disposition": `attachment; filename="schoolsync-backup-${filename.replace(/^schoolsync-/, "")}"`,
         "Cache-Control": "no-store",
       },

@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { backupDir, dailySnapshotDue, listSnapshots, writeSnapshot, type SnapshotReason } from "./backup.ts";
+import { backupDir, dailySnapshotDue, encryptPlainSnapshots, listSnapshots, writeSnapshot, type SnapshotReason } from "./backup.ts";
+import { encryptionConfigured, isEncrypted, seal, unseal } from "./dataCrypto.ts";
 import { migrateDatabase } from "./migrate.ts";
 import { initialDatabase } from "./seed.ts";
 import type { Database } from "./types.ts";
@@ -28,8 +29,12 @@ const store: Store = (g.__schoolsyncStore ??= { db: null, queue: Promise.resolve
 async function load(): Promise<Database> {
   if (store.db) return store.db;
   try {
-    const db = JSON.parse(await readFile(dataFile(), "utf8")) as Database;
-    if (migrateDatabase(db)) await persist(db);
+    const raw = await readFile(dataFile());
+    const db = JSON.parse(unseal(raw).toString("utf8")) as Database;
+    // Turning encryption on: re-save the data and the existing backups encrypted.
+    const encryptNow = !isEncrypted(raw) && encryptionConfigured();
+    if (migrateDatabase(db) || encryptNow) await persist(db);
+    if (encryptNow) await encryptPlainSnapshots(backupDir(dataFile()));
     store.db = db;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
@@ -43,7 +48,8 @@ async function persist(db: Database): Promise<void> {
   const file = dataFile();
   await mkdir(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  await writeFile(tmp, JSON.stringify(db, null, 2));
+  // Encrypted when DATA_ENCRYPTION_KEY is set (see dataCrypto.ts).
+  await writeFile(tmp, encryptionConfigured() ? seal(Buffer.from(JSON.stringify(db))) : JSON.stringify(db, null, 2));
   await rename(tmp, file);
 }
 

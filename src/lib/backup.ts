@@ -1,12 +1,13 @@
 import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
+import { isEncrypted, seal, unseal } from "./dataCrypto.ts";
 import { HttpError } from "./errors.ts";
 import { ROLES, type Database } from "./types.ts";
 
 /**
  * Compressed snapshots of the datastore, kept next to it in a "backups"
- * folder. They protect against mistakes (a bad import, an accidental
+ * folder (encrypted when DATA_ENCRYPTION_KEY is set). They protect against mistakes (a bad import, an accidental
  * delete); downloading them protects against losing the disk itself.
  */
 
@@ -58,7 +59,7 @@ export async function listSnapshots(dir: string): Promise<Snapshot[]> {
 export async function writeSnapshot(dir: string, db: Database, reason: SnapshotReason, at = new Date()): Promise<Snapshot> {
   await mkdir(dir, { recursive: true });
   const name = snapshotName(reason, at);
-  const data = gzipSync(JSON.stringify(db));
+  const data = seal(gzipSync(JSON.stringify(db)));
   const tmp = path.join(dir, `${name}.tmp`);
   await writeFile(tmp, data);
   await rename(tmp, path.join(dir, name));
@@ -85,10 +86,33 @@ export async function readSnapshot(dir: string, name: string): Promise<Buffer> {
   }
 }
 
+/** Encrypt backups saved before encryption was turned on. */
+export async function encryptPlainSnapshots(dir: string): Promise<number> {
+  let n = 0;
+  for (const s of await listSnapshots(dir)) {
+    const file = path.join(dir, s.name);
+    const data = await readFile(file);
+    if (isEncrypted(data)) continue;
+    await writeFile(`${file}.tmp`, seal(data));
+    await rename(`${file}.tmp`, file);
+    n++;
+  }
+  return n;
+}
+
+/** Whether a backup file needs the encryption key to open (for naming downloads). */
+export { isEncrypted as backupIsEncrypted };
+
 export function decodeBackup(data: Buffer | string): Database {
   let text: string;
+  let raw = typeof data === "string" ? Buffer.from(data, "utf8") : data;
   try {
-    const buf = typeof data === "string" ? Buffer.from(data, "utf8") : data;
+    raw = unseal(raw);
+  } catch (err) {
+    throw new HttpError(400, err instanceof Error ? err.message : "That backup couldn't be decrypted");
+  }
+  try {
+    const buf = raw;
     text = buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf).toString("utf8") : buf.toString("utf8");
     return validateDatabase(JSON.parse(text.replace(/^﻿/, "")));
   } catch (err) {
