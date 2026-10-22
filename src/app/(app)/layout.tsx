@@ -2,7 +2,7 @@ import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS, POSTER_MAKERS, SCHOOL_WIDE, STAFF, WHATSAPP_INBOX, type Role } from "@/lib/types";
+import { ASSIGNMENT_SETTERS, DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS, POSTER_MAKERS, SCHOOL_WIDE, STAFF, WHATSAPP_INBOX, type Role } from "@/lib/types";
 
 const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/dashboard", label: "Dashboard" },
@@ -10,7 +10,9 @@ const NAV: (NavItem & { roles?: Role[] })[] = [
   // The director's AI Assistant is the School AI (school and families only; system questions go to the administrator).
   { href: "/assistant", label: "AI Assistant", roles: ["admin", "headteacher", "secretary", "teacher", "parent", "student"] },
   { href: "/school-ai", label: "AI Assistant", roles: ["director"] },
+  { href: "/assignments", label: "Assignments & revision", roles: ["student"] },
   { href: "/results", label: "Results", roles: STAFF },
+  { href: "/assignments", label: "Assignments", roles: ASSIGNMENT_SETTERS },
   { href: "/fees", label: "Fees", roles: FEE_VIEWERS },
   { href: "/facts", label: "School facts", roles: OFFICE },
   { href: "/events", label: "Events", roles: SCHOOL_WIDE },

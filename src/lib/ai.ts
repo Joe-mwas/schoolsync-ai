@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
+import { assignmentsContext } from "./assignments.ts";
 import { dutiesFor, dutyWhen } from "./duties.ts";
 import { factsFor, factsPrompt } from "./facts.ts";
 import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
@@ -34,7 +35,8 @@ Guidelines:
 - When drafting messages for staff, match the school's tone: polite, clear, and action-oriented, with dates and deadlines stated explicitly.
 - <school_facts> are confirmed by the school itself. They override anything else you know or assume; when a question is covered by a fact, answer from it.
 - For results and fees, use only the figures in <records>. Never estimate or invent a level, amount or date; if it isn't there, say so.
-- CBC levels: EE = Exceeding Expectations, ME = Meeting Expectations, AE = Approaching Expectations, BE = Below Expectations.`;
+- CBC levels: EE = Exceeding Expectations, ME = Meeting Expectations, AE = Approaching Expectations, BE = Below Expectations.
+- With learners, be a patient study helper: explain topics simply, give worked examples and short practice quizzes for their revision. For an assignment, guide them step by step to the answer rather than writing it for them.`;
 
 /**
  * Results and fees this person is entitled to: parents see their own
@@ -48,7 +50,10 @@ function recordsFor(user: User, db: Database): string {
       .map((k) => `${formatReport(k.name, studentReport(db, k.id))}\n${formatFeeStatement(k.name, feeStatement(db, k.id))}`)
       .join("\n\n");
   }
-  if (user.role === "student") return formatReport(user.name, studentReport(db, user.id));
+  if (user.role === "student") {
+    const work = assignmentsContext(db, user);
+    return [formatReport(user.name, studentReport(db, user.id)), ...(work ? [`Assignments and revision set for ${user.name}'s class:\n${work}`] : [])].join("\n\n");
+  }
   if (user.role === "teacher") {
     const duties = dutiesFor(db, user).filter((d) => d.status === "open").map((d) => `Duty: ${d.title}${dutyWhen(d) ? ` (${dutyWhen(d)})` : ""}${d.details ? ` — ${d.details}` : ""}`);
     return [...duties, ...db.classes

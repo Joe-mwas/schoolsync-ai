@@ -29,6 +29,8 @@ export const WHATSAPP_INBOX: Role[] = ["admin", "headteacher", "secretary"];
 export const POSTER_MAKERS: Role[] = ["admin", "headteacher", "secretary", "teacher"];
 /** Can publish announcements and open the Results page. */
 export const STAFF: Role[] = ["admin", "director", "headteacher", "secretary", "teacher"];
+/** Set assignments and revision work: teachers for their own classes, the headteacher and administrator for any class. */
+export const ASSIGNMENT_SETTERS: Role[] = ["admin", "headteacher", "teacher"];
 /** Who announcements can be addressed to. */
 export const AUDIENCE_ROLES: Role[] = ["teacher", "parent", "student"];
 
@@ -245,6 +247,27 @@ export interface Database {
   featureRequests: FeatureRequest[];
   forwardedQuestions: ForwardedQuestion[];
   duties: Duty[];
+  assignments: Assignment[];
+}
+
+/** Homework or revision material a teacher sets for one or more classes. */
+export interface Assignment {
+  id: string;
+  /** "assignment" has a due date and is marked done; "revision" is notes or practice to revise from. */
+  kind: "assignment" | "revision";
+  title: string;
+  /** Learning area, e.g. Mathematics. */
+  subject: string;
+  details: string;
+  classIds: string[];
+  /** YYYY-MM-DD, assignments only. */
+  dueDate: string | null;
+  /** Optional web link (a worksheet, video, past paper). */
+  link: string | null;
+  createdBy: string;
+  createdAt: string;
+  /** Learners who have marked it done. */
+  doneBy: string[];
 }
 
 /** A duty the headteacher (or director) gives one or more teachers, e.g. "Duty teacher this week". */

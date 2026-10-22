@@ -36,6 +36,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     featureRequests: [],
     forwardedQuestions: [],
     duties: [],
+    assignments: [],
   };
 }
 
@@ -145,6 +146,34 @@ export function seedDatabase(): Database {
         createdAt: iso(-1),
         doneAt: null,
         doneBy: null,
+      },
+    ],
+    assignments: [
+      {
+        id: "as-demo-maths",
+        kind: "assignment",
+        title: "Fractions worksheet",
+        subject: "Mathematics",
+        details: "Exercise 4B, questions 1–10 in the Spotlight Maths book. Show your working.",
+        classIds: ["c-grade7"],
+        dueDate: iso(3).slice(0, 10),
+        link: null,
+        createdBy: "u-teacher1",
+        createdAt: iso(-1),
+        doneBy: [],
+      },
+      {
+        id: "as-demo-revision",
+        kind: "revision",
+        title: "End of term revision: Integrated Science",
+        subject: "Integrated Science",
+        details: "Revise: the human digestive system, states of matter, and simple machines. Try the end-of-topic questions on pages 42, 67 and 88.",
+        classIds: ["c-grade7"],
+        dueDate: null,
+        link: null,
+        createdBy: "u-teacher1",
+        createdAt: iso(-2),
+        doneBy: [],
       },
     ],
   };
