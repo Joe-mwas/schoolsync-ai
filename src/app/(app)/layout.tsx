@@ -2,21 +2,22 @@ import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { LEADERS, OFFICE, STAFF, type Role } from "@/lib/types";
+import { DUTY_MANAGERS, FEE_VIEWERS, LEADERS, OFFICE, PEOPLE_MANAGERS, SCHOOL_WIDE, STAFF, type Role } from "@/lib/types";
 
 const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/announcements", label: "Announcements" },
   { href: "/assistant", label: "AI Assistant" },
   { href: "/results", label: "Results", roles: STAFF },
-  { href: "/fees", label: "Fees", roles: OFFICE },
+  { href: "/fees", label: "Fees", roles: FEE_VIEWERS },
   { href: "/facts", label: "School facts", roles: OFFICE },
-  { href: "/events", label: "Events", roles: OFFICE },
+  { href: "/events", label: "Events", roles: SCHOOL_WIDE },
+  { href: "/duties", label: "Duties", roles: [...DUTY_MANAGERS, "teacher"] },
   { href: "/posters", label: "Poster Designer", roles: STAFF },
-  { href: "/whatsapp", label: "WhatsApp", roles: OFFICE },
-  { href: "/school", label: "School Admin", roles: LEADERS },
+  { href: "/whatsapp", label: "WhatsApp", roles: SCHOOL_WIDE },
+  { href: "/school", label: "School Admin", roles: PEOPLE_MANAGERS },
   { href: "/admin-ai", label: "Admin AI", roles: ["admin"] },
-  { href: "/school-ai", label: "School AI", roles: ["director"] },
+  { href: "/school-ai", label: "School AI", roles: ["director", "headteacher"] },
   { href: "/ai-review", label: "AI Review", roles: ["admin"] },
   { href: "/setup", label: "Setup", roles: ["admin"] },
   { href: "/account", label: "My account" },

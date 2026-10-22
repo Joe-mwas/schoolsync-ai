@@ -201,7 +201,7 @@ export default function AdminAiChat({
 
       {isAdmin && questions.length > 0 && (
         <div className="card stack">
-          <h2>Questions from directors ({questions.filter((q) => q.status === "open").length} open)</h2>
+          <h2>Questions forwarded to you ({questions.filter((q) => q.status === "open").length} open)</h2>
           {questions.map((q) => (
             <div key={q.id} className="stack" style={{ borderTop: "1px solid var(--border)", paddingTop: "0.6rem", gap: 4, opacity: q.status === "answered" ? 0.6 : 1 }}>
               <div className="row" style={{ justifyContent: "space-between" }}>

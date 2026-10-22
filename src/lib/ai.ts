@@ -1,10 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
+import { dutiesFor, dutyWhen } from "./duties.ts";
 import { factsFor, factsPrompt } from "./facts.ts";
 import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
-import { isLeader, isOffice } from "./types.ts";
+import { isLeader, isSchoolWide } from "./types.ts";
 import type { Database, User } from "./types.ts";
 
 export const MODEL = "claude-opus-5-5";
@@ -49,7 +50,8 @@ function recordsFor(user: User, db: Database): string {
   }
   if (user.role === "student") return formatReport(user.name, studentReport(db, user.id));
   if (user.role === "teacher") {
-    return db.classes
+    const duties = dutiesFor(db, user).filter((d) => d.status === "open").map((d) => `Duty: ${d.title}${dutyWhen(d) ? ` (${dutyWhen(d)})` : ""}${d.details ? ` — ${d.details}` : ""}`);
+    return [...duties, ...db.classes
       .filter((c) => user.classIds.includes(c.id))
       .map((c) => {
         const ids = db.users.filter((u) => u.role === "student" && u.classIds.includes(c.id)).map((u) => u.id);
@@ -58,10 +60,10 @@ function recordsFor(user: User, db: Database): string {
         return p
           ? `${c.name}, ${exam}: EE ${p.counts.EE}, ME ${p.counts.ME}, AE ${p.counts.AE}, BE ${p.counts.BE}; weakest area ${p.weakestArea}; needing support: ${p.needingSupport.join(", ") || "none"}`
           : `${c.name}: no results yet`;
-      })
-      .join("\n");
+      }),
+    ].join("\n");
   }
-  if (isOffice(user.role)) {
+  if (isSchoolWide(user.role)) {
     const f = schoolFees(db, new Date(Date.now() - 7 * 86_400_000).toISOString());
     const exam = examsFor(db)[0];
     const perf = exam ? examPerformance(db, exam) : [];

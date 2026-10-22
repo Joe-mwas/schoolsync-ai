@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ROLE_LABELS } from "@/lib/permissions";
+import { canManageRole, type Role } from "@/lib/types";
+
+/** Most common first in the Role list. */
+const ROLE_ORDER: Role[] = ["parent", "student", "teacher", "secretary", "headteacher", "director", "admin"];
 
 interface Option {
   id: string;
@@ -17,13 +22,14 @@ export default function SchoolForms({
   classes,
   students,
   teachers,
-  canCreateAdmin,
+  myRole,
 }: {
   classes: Option[];
   students: Option[];
   teachers: Option[];
-  canCreateAdmin: boolean;
+  myRole: Role;
 }) {
+  const roleOptions = ROLE_ORDER.filter((r) => canManageRole(myRole, r));
   const router = useRouter();
   const [person, setPerson] = useState({ name: "", email: "", role: "parent", phone: "", password: "", classId: "", childId: "", admissionNo: "" });
   const [cls, setCls] = useState({ name: "", teacherId: "" });
@@ -61,17 +67,12 @@ export default function SchoolForms({
           <label>
             Role
             <select value={person.role} onChange={p("role")}>
-              <option value="parent">Parent</option>
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="secretary">Secretary</option>
-              <option value="director">Director</option>
-              {canCreateAdmin && <option value="admin">Administrator</option>}
+              {roleOptions.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
             </select>
           </label>
           <label>
             Email{person.role === "parent" || person.role === "student" ? " (optional)" : ""}
-            <input type="email" value={person.email} onChange={p("email")} required={person.role === "admin" || person.role === "director" || person.role === "secretary" || person.role === "teacher"} />
+            <input type="email" value={person.email} onChange={p("email")} required={person.role !== "parent" && person.role !== "student"} />
           </label>
           <label>WhatsApp phone<input value={person.phone} onChange={p("phone")} placeholder="+2547…" /></label>
           <label>Temporary password<input type="password" value={person.password} onChange={p("password")} required minLength={8} /></label>

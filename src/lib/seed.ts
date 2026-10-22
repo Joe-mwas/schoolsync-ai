@@ -35,6 +35,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     adminActions: [],
     featureRequests: [],
     forwardedQuestions: [],
+    duties: [],
   };
 }
 
@@ -60,6 +61,7 @@ export function seedDatabase(): Database {
     users: [
       { id: "u-admin", name: "System Administrator", email: "admin@schoolsync.test", role: "admin", passwordHash: pw, classIds: [], childIds: [] },
       { id: "u-director", name: "Grace Wanjiru", email: "director@schoolsync.test", role: "director", passwordHash: pw, phone: "+254700000001", classIds: [], childIds: [] },
+      { id: "u-headteacher", name: "Samuel Mutiso", email: "headteacher@schoolsync.test", role: "headteacher", passwordHash: pw, phone: "+254700000007", classIds: [], childIds: [] },
       { id: "u-secretary", name: "Mary Achieng", email: "secretary@schoolsync.test", role: "secretary", passwordHash: pw, phone: "+254700000006", classIds: [], childIds: [] },
       { id: "u-teacher1", name: "Peter Otieno", email: "teacher@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000002", classIds: ["c-grade7"], childIds: [] },
       { id: "u-teacher2", name: "Mary Akinyi", email: "teacher2@schoolsync.test", role: "teacher", passwordHash: pw, phone: "+254700000003", classIds: ["c-grade8"], childIds: [] },
@@ -130,6 +132,21 @@ export function seedDatabase(): Database {
     adminActions: [],
     featureRequests: [],
     forwardedQuestions: [],
+    duties: [
+      {
+        id: "duty-demo",
+        title: "Duty teacher this week",
+        details: "Morning gate 7:00–7:45 and lunch supervision.",
+        teacherIds: ["u-teacher1"],
+        startDate: iso(0).slice(0, 10),
+        endDate: iso(4).slice(0, 10),
+        status: "open",
+        createdBy: "u-headteacher",
+        createdAt: iso(-1),
+        doneAt: null,
+        doneBy: null,
+      },
+    ],
   };
 }
 

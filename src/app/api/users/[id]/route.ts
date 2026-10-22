@@ -1,13 +1,13 @@
 import { errorResponse, requireApiUser, toPublic } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
 import { assertCanManage, deletePerson, updatePerson, type PersonInput } from "@/lib/users";
-import { LEADERS } from "@/lib/types";
+import { PEOPLE_MANAGERS } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Ctx) {
   try {
-    const actor = await requireApiUser(LEADERS);
+    const actor = await requireApiUser(PEOPLE_MANAGERS);
     const { id } = await params;
     const input = (await req.json().catch(() => ({}))) as PersonInput;
     const user = await mutateDb((db) => {
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
-    const actor = await requireApiUser(LEADERS);
+    const actor = await requireApiUser(PEOPLE_MANAGERS);
     const { id } = await params;
     await mutateDb((db) => {
       assertCanManage(actor, db.users.find((u) => u.id === id) ?? { role: undefined });

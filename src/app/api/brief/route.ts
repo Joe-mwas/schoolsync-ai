@@ -3,12 +3,12 @@ import { logAiExchange } from "@/lib/aiLog";
 import { errorResponse, requireApiUser } from "@/lib/auth";
 import { parseBriefPeriod } from "@/lib/brief";
 import { mutateDb, readDb } from "@/lib/db";
-import { OFFICE } from "@/lib/types";
+import { SCHOOL_WIDE } from "@/lib/types";
 
 /** POST { period }: the same brief a leader gets on WhatsApp ("", "today", "this week", "this month"). */
 export async function POST(req: Request) {
   try {
-    const user = await requireApiUser(OFFICE);
+    const user = await requireApiUser(SCHOOL_WIDE);
     const { period } = (await req.json().catch(() => ({}))) as { period?: string };
     const db = await readDb();
     const p = parseBriefPeriod(period ?? "", user.lastBriefAt);

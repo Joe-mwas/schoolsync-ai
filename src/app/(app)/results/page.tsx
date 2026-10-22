@@ -1,13 +1,13 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { isOffice, STAFF } from "@/lib/types";
+import { isSchoolWide, STAFF } from "@/lib/types";
 import ResultsEditor from "./ResultsEditor";
 
 export default async function ResultsPage() {
   const user = await requireUser(STAFF);
   const db = await readDb();
   const classes = db.classes
-    .filter((c) => isOffice(user.role) || user.classIds.includes(c.id))
+    .filter((c) => isSchoolWide(user.role) || user.classIds.includes(c.id))
     .map((c) => ({ id: c.id, name: c.name }));
   return (
     <div className="stack">

@@ -12,13 +12,13 @@ export { morningBriefConfig, nairobiClock };
 
 type Env = Record<string, string | undefined>;
 
-/** Directors who should get this morning's brief now. */
+/** The director and headteacher, if they should get this morning's brief now. */
 export function dueForMorningBrief(db: Pick<Database, "users">, cfg: MorningBriefConfig | null, now = Date.now()): User[] {
   if (!cfg) return [];
   const clock = nairobiClock(now);
   if (cfg.weekdaysOnly && (clock.weekday === 0 || clock.weekday === 6)) return [];
   if (clock.minute < cfg.minute || clock.minute >= LATEST_MINUTE) return [];
-  return db.users.filter((u) => u.role === "director" && u.phone && u.morningBriefDate !== clock.date);
+  return db.users.filter((u) => (u.role === "director" || u.role === "headteacher") && u.phone && u.morningBriefDate !== clock.date);
 }
 
 function logged(user: User, phone: string, body: string, r: SendResult, kind: "text" | "template"): WhatsAppMessage {

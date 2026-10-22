@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import AdminAiChat from "../admin-ai/AdminAiChat";
 
 export default async function SchoolAiPage() {
-  await requireUser(["director"]);
+  await requireUser(["director", "headteacher"]);
   return (
     <div className="stack">
       <div className="page-header">

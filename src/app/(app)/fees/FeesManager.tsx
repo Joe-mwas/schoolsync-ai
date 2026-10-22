@@ -25,11 +25,13 @@ export default function FeesManager({
   classes,
   currency,
   defaultTerm,
+  readOnly = false,
 }: {
   learners: Learner[];
   classes: { id: string; name: string }[];
   currency: string;
   defaultTerm: string;
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [classFilter, setClassFilter] = useState("");
@@ -91,14 +93,15 @@ export default function FeesManager({
           studentId={selected}
           currency={currency}
           defaultTerm={defaultTerm}
+          readOnly={readOnly}
           onClose={() => setSelected(null)}
           onChange={() => router.refresh()}
         />
       )}
 
-      <ClassCharge classes={classes} currency={currency} defaultTerm={defaultTerm} onDone={() => router.refresh()} />
+      {!readOnly && <ClassCharge classes={classes} currency={currency} defaultTerm={defaultTerm} onDone={() => router.refresh()} />}
 
-      <CsvImportCard
+      {!readOnly && <CsvImportCard
         title="Upload fees from a spreadsheet"
         description={
           <>
@@ -110,7 +113,7 @@ export default function FeesManager({
         endpoint="/api/fees/import"
         templateName="schoolsync-fees-template.csv"
         templateCsv={FEES_TEMPLATE_CSV}
-      />
+      />}
     </div>
   );
 }
@@ -119,9 +122,11 @@ function Statement({
   studentId,
   currency,
   defaultTerm,
+  readOnly,
   onClose,
   onChange,
 }: {
+  readOnly: boolean;
   studentId: string;
   currency: string;
   defaultTerm: string;
@@ -194,14 +199,14 @@ function Statement({
                   <td className="small">{e.kind === "payment" ? "Payment" : "Charge"}{e.source !== "manual" ? ` (${e.source === "import" ? "uploaded" : e.source === "mpesa" ? "M-Pesa, automatic" : "class fee"})` : ""}</td>
                   <td className="small">{money(e.amount, currency)}</td>
                   <td className="small">{[e.reference, e.note].filter(Boolean).join(" · ") || "—"}</td>
-                  <td><button className="danger small" onClick={() => remove(e.id)}>Delete</button></td>
+                  <td>{!readOnly && <button className="danger small" onClick={() => remove(e.id)}>Delete</button>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <form className="stack" onSubmit={add} style={{ background: "var(--surface-2)", padding: "0.75rem", borderRadius: 8 }}>
+      {!readOnly && <form className="stack" onSubmit={add} style={{ background: "var(--surface-2)", padding: "0.75rem", borderRadius: 8 }}>
         <div className="small" style={{ fontWeight: 600 }}>Record a payment or charge</div>
         <div className="grid grid-3">
           <label>Type<select value={form.kind} onChange={f("kind")}><option value="payment">Payment</option><option value="charge">Charge</option></select></label>
@@ -213,7 +218,7 @@ function Statement({
         </div>
         {msg && <div className={msg.ok ? "small" : "error"}>{msg.ok ? "✅ " : ""}{msg.text}</div>}
         <div><button type="submit">Save</button></div>
-      </form>
+      </form>}
     </div>
   );
 }

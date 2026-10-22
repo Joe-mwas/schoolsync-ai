@@ -1,10 +1,10 @@
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { OFFICE } from "@/lib/types";
+import { SCHOOL_WIDE } from "@/lib/types";
 import EventsManager from "./EventsManager";
 
 export default async function EventsPage() {
-  await requireUser(OFFICE);
+  await requireUser(SCHOOL_WIDE);
   const db = await readDb();
   const events = [...db.events].sort((a, b) => a.date.localeCompare(b.date));
   return (

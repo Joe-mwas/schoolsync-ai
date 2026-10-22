@@ -1,7 +1,7 @@
 import { HttpError } from "./errors.ts";
 import { hashPassword } from "./password.ts";
 import { canonicalPhone, phoneKey } from "./phone.ts";
-import { isLeader, ROLES, type Database, type Role, type User } from "./types.ts";
+import { canManageRole, isLeader, ROLES, type Database, type Role, type User } from "./types.ts";
 
 export const MIN_PASSWORD_LENGTH = 8;
 
@@ -21,7 +21,7 @@ export function setPassword(user: User, password: string, opts: { mustChange: bo
 }
 
 /** Staff sign in with email; parents and students may use a phone number instead. */
-const EMAIL_REQUIRED: Role[] = ["admin", "director", "secretary", "teacher"];
+const EMAIL_REQUIRED: Role[] = ["admin", "director", "headteacher", "secretary", "teacher"];
 
 function normalizeEmail(email: unknown, role: Role): string {
   const e = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -221,5 +221,8 @@ export function deletePerson(db: Database, actorId: string, id: string): void {
 export function assertCanManage(actor: Pick<User, "role">, target: { role: Role | string | undefined }): void {
   if (target.role === "admin" && actor.role !== "admin") {
     throw new HttpError(403, "Only an administrator can manage administrator accounts");
+  }
+  if (!canManageRole(actor.role, String(target.role))) {
+    throw new HttpError(403, actor.role === "headteacher" ? "The headteacher manages teachers, learners and parents only" : "You can't manage this account");
   }
 }
