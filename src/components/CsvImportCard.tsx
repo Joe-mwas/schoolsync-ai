@@ -1,5 +1,6 @@
 "use client";
 
+import { readSpreadsheet, SPREADSHEET_ACCEPT } from "@/components/readSpreadsheet";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -66,12 +67,14 @@ export default function CsvImportCard({
     setError(null);
     setDone(null);
     setRows(null);
-    if (/\.xlsx?$/i.test(file.name)) {
-      setError('That looks like an Excel file. In Excel choose File → Save As → "CSV UTF-8", then upload the .csv file.');
+    setFileName(file.name);
+    let text: string;
+    try {
+      text = await readSpreadsheet(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that file");
       return;
     }
-    setFileName(file.name);
-    const text = await file.text();
     setCsv(text);
     setBusy(true);
     const preview = await send(text, true);
@@ -102,8 +105,8 @@ export default function CsvImportCard({
       <div className="small muted">{description}</div>
       <div className="row">
         <label className="button secondary" style={{ cursor: disabledReason ? "not-allowed" : "pointer", fontSize: "inherit", opacity: disabledReason ? 0.55 : 1 }}>
-          Choose CSV file…
-          <input type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} disabled={Boolean(disabledReason) || busy} />
+          Choose Excel or CSV file…
+          <input type="file" accept={SPREADSHEET_ACCEPT} onChange={onFile} style={{ display: "none" }} disabled={Boolean(disabledReason) || busy} />
         </label>
         {fileName && <span className="small muted">{fileName}</span>}
         {disabledReason && <span className="small muted">{disabledReason}</span>}

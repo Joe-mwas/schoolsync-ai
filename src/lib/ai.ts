@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
 import { assignmentsContext } from "./assignments.ts";
+import { profileName } from "./schoolProfile.ts";
 import { dutiesFor, dutyWhen } from "./duties.ts";
 import { factsFor, factsPrompt } from "./facts.ts";
 import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fees.ts";
@@ -272,8 +273,9 @@ export async function testAiConnection(): Promise<ConnectionTestResult> {
   }
 }
 
+/** The name typed in Setup, else the SCHOOL_NAME setting. */
 export function schoolName(env: Record<string, string | undefined> = process.env): string {
-  return env.SCHOOL_NAME?.trim() || "SchoolSync";
+  return profileName() || env.SCHOOL_NAME?.trim() || "SchoolSync";
 }
 
 /**

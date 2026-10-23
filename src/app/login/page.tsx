@@ -2,6 +2,7 @@ import BrandMark from "@/components/BrandMark";
 import { redirect } from "next/navigation";
 import { schoolName } from "@/lib/ai";
 import { getCurrentUser } from "@/lib/auth";
+import { readDb } from "@/lib/db";
 import { DEMO_PASSWORD } from "@/lib/seed";
 import LoginForm from "./LoginForm";
 import SchoolScene from "./SchoolScene";
@@ -11,7 +12,8 @@ import { currentTheme } from "@/lib/theme";
 export default async function LoginPage() {
   if (await getCurrentUser()) redirect("/dashboard");
   const showDemo = process.env.NODE_ENV !== "production" || process.env.SHOW_DEMO_ACCOUNTS === "1";
-  const school = process.env.SCHOOL_NAME?.trim() ? schoolName() : null;
+  const { profile } = await readDb();
+  const school = profile.name || process.env.SCHOOL_NAME?.trim() ? schoolName() : null;
   return (
     <div className="auth">
       <section className="auth-panel">
@@ -23,7 +25,12 @@ export default async function LoginPage() {
             <ThemeToggle initial={await currentTheme()} />
           </div>
           <div>
-            {school && <div className="auth-school">{school}</div>}
+            {(school || profile.logo) && (
+              <div className="auth-school">
+                {profile.logo && <img src={`/api/school/logo?v=${encodeURIComponent(profile.logo.file)}`} alt="" width={40} height={40} />}
+                {school && <span>{school}</span>}
+              </div>
+            )}
             <h1 className="auth-title">Welcome back</h1>
             <p className="muted" style={{ margin: 0 }}>Sign in to your school&apos;s communication hub.</p>
           </div>

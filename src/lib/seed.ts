@@ -1,3 +1,4 @@
+import { emptyProfile } from "./migrate.ts";
 import { hashPassword } from "./password.ts";
 import type { Database } from "./types.ts";
 
@@ -38,6 +39,8 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     duties: [],
     assignments: [],
     passwordHelp: [],
+    profile: emptyProfile(),
+    documents: [],
   };
 }
 
@@ -200,6 +203,8 @@ export function seedDatabase(): Database {
       },
     ],
     passwordHelp: [],
+    profile: emptyProfile(),
+    documents: [],
   };
 }
 

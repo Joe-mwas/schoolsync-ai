@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Role } from "@/lib/types";
@@ -104,7 +105,7 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
         </label>
         {error && <div className="error">{error}</div>}
         <div className="auth-actions">
