@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { broadcastAnnouncement } from "@/lib/broadcast";
 import { mutateDb, newId, readDb } from "@/lib/db";
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
     await mutateDb((d) => void d.announcements.push(announcement));
 
     const whatsapp = input.sendWhatsApp ? await broadcastAnnouncement(announcement.id) : null;
+    await logActivity(req, user, "messages", "Posted an announcement", `${title}${input.sendWhatsApp ? " · sent on WhatsApp" : ""}`);
     return Response.json({ announcement, whatsapp }, { status: 201 });
   } catch (err) {
     return errorResponse(err);

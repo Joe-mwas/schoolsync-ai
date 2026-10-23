@@ -67,9 +67,23 @@ export interface User {
   admissionNo?: string | null;
   /** Director and headteacher: the Nairobi date (YYYY-MM-DD) the last automatic morning brief went out. */
   morningBriefDate?: string | null;
+  /** Staff: two-step sign-in with an authenticator app. */
+  twoStep?: TwoStep | null;
+  /** A two-step key shown during setup, kept until the first code confirms it. */
+  twoStepPending?: { secret: string; createdAt: string } | null;
 }
 
-export type PublicUser = Omit<User, "passwordHash" | "sessionVersion">;
+export interface TwoStep {
+  /** The authenticator app's key (base32). */
+  secret: string;
+  enabledAt: string;
+  /** SHA-256 hashes of the unused one-time backup codes. */
+  backupCodes: string[];
+  /** The last 30-second step a code was accepted for, so a code works only once. */
+  lastStep?: number;
+}
+
+export type PublicUser = Omit<User, "passwordHash" | "sessionVersion" | "twoStep" | "twoStepPending">;
 
 export interface SchoolClass {
   id: string;
@@ -255,6 +269,44 @@ export interface Database {
   /** The latest AI insights for each dashboard view, reused until the figures change. */
   insights: Partial<Record<InsightScope, SavedInsights>>;
   aiSettings: AiSettings;
+  security: SecuritySettings;
+  /** Who did what, newest last (capped). */
+  activity: ActivityEntry[];
+}
+
+/** Choices for signing staff out after a while without activity, in minutes. */
+export const IDLE_CHOICES = [15, 30, 60, 120] as const;
+
+export interface SecuritySettings {
+  /** Every staff account must use two-step sign-in. */
+  requireTwoStep: boolean;
+  /** Staff are signed out after this many minutes without activity. */
+  idleMinutes: number;
+}
+
+export const ACTIVITY_KINDS = {
+  signin: "Sign-ins",
+  security: "Security",
+  people: "People",
+  fees: "Fees",
+  results: "Results",
+  data: "Data & backups",
+  messages: "Messages",
+  settings: "Settings",
+} as const;
+export type ActivityKind = keyof typeof ACTIVITY_KINDS;
+
+export interface ActivityEntry {
+  id: string;
+  at: string;
+  /** Who did it; null for a stranger (e.g. a failed sign-in to an unknown account). */
+  userId: string | null;
+  name: string;
+  role: Role | null;
+  kind: ActivityKind;
+  action: string;
+  detail: string;
+  ip?: string;
 }
 
 /** Which Claude model answers parents and learners (staff always get the top model). */

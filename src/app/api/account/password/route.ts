@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser, setSessionCookie } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
       setPassword(u, newPassword ?? "", { mustChange: false });
       return u;
     });
+    await logActivity(req, me, "security", "Changed own password");
     // Other devices are signed out; keep this one signed in.
     await setSessionCookie(user);
     return Response.json({ ok: true });

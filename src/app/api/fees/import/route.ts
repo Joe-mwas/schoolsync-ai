@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, readDb } from "@/lib/db";
 import { importFees } from "@/lib/fees";
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
     if (typeof csv !== "string" || !csv.trim()) throw new HttpError(400, "Choose a CSV file");
     if (csv.length > 1_000_000) throw new HttpError(400, "That file is too large");
     const report = dryRun ? importFees(structuredClone(await readDb()), user, csv) : await mutateDb((db) => importFees(db, user, csv));
+    if (!dryRun) await logActivity(req, user, "fees", "Imported fees from a file", `${report.updated} learners updated${report.errors ? `, ${report.errors} rows with problems` : ""}`);
     return Response.json(report);
   } catch (err) {
     return errorResponse(err);

@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, requireApiUser } from "@/lib/auth";
 import { listSnapshots } from "@/lib/backup";
 import { backupDirectory, snapshotDb } from "@/lib/db";
@@ -13,10 +14,12 @@ export async function GET() {
 }
 
 /** Back up now. */
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    await requireApiUser(ADMINS);
-    return Response.json({ snapshot: await snapshotDb("manual") }, { status: 201 });
+    const me = await requireApiUser(ADMINS);
+    const snapshot = await snapshotDb("manual");
+    await logActivity(req, me, "data", "Made a backup");
+    return Response.json({ snapshot }, { status: 201 });
   } catch (err) {
     return errorResponse(err);
   }

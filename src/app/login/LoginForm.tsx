@@ -29,7 +29,7 @@ const DEMO: { role: Role; email: string }[] = [
 const STORE_KEY = "schoolsync.signInRole";
 const usesPhone = (r: Role | "") => r === "parent" || r === "student";
 
-export default function LoginForm({ demoPassword }: { demoPassword: string | null }) {
+export default function LoginForm({ demoPassword, notice = null }: { demoPassword: string | null; notice?: string | null }) {
   const router = useRouter();
   const [role, setRole] = useState<Role | "">("");
   const [email, setEmail] = useState("");
@@ -37,6 +37,8 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"signin" | "forgot" | "sent">("signin");
+  const [ticket, setTicket] = useState<string | null>(null);
+  const [code, setCode] = useState("");
 
   // Remember the role picked last time on this device (a convenience only).
   useEffect(() => {
@@ -56,20 +58,80 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: e, password: p, role: r }),
     });
+    const data = await res.json().catch(() => null);
     if (res.ok) {
       try {
         localStorage.setItem(STORE_KEY, r);
       } catch {
         /* ignore */
       }
-      router.replace("/dashboard");
-      router.refresh();
+      if (data?.twoStep && data.ticket) {
+        setTicket(data.ticket);
+        setCode("");
+        setBusy(false);
+        return;
+      }
+      finish();
       return;
     }
-    const data = await res.json().catch(() => null);
     if (data?.role && ROLE_CHOICES.some((c) => c.role === data.role)) setRole(data.role);
     setError(data?.error ?? "Sign in failed");
     setBusy(false);
+  }
+
+  function finish() {
+    try {
+      localStorage.setItem("schoolsync.lastActive", String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+    router.replace("/dashboard");
+    router.refresh();
+  }
+
+  async function sendCode() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/auth/two-step", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, code }) });
+    const data = await res.json().catch(() => null);
+    if (res.ok) return finish();
+    if (data?.restart) {
+      setTicket(null);
+      setPassword("");
+    }
+    setError(data?.error ?? "Sign in failed");
+    setBusy(false);
+  }
+
+  if (ticket) {
+    return (
+      <form className="auth-form" onSubmit={(ev) => { ev.preventDefault(); sendCode(); }}>
+        <div>
+          <h2 className="auth-subtitle">Two-step sign-in</h2>
+          <p className="muted small" style={{ margin: 0 }}>Open your authenticator app and type the 6-digit code for SchoolSync.</p>
+        </div>
+        <label>
+          Code
+          <input
+            className="auth-code-input"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            required
+            autoFocus
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            maxLength={9}
+            placeholder="123456"
+          />
+        </label>
+        {error && <div className="error">{error}</div>}
+        <div className="auth-actions">
+          <button type="submit" disabled={busy || code.trim().length < 6}>{busy ? "Checking…" : "Sign in"}</button>
+          <button type="button" className="link" onClick={() => { setTicket(null); setError(null); setPassword(""); }}>Back</button>
+        </div>
+        <p className="small muted" style={{ margin: 0 }}>Lost your phone? Type one of your backup codes instead, or ask the administrator to reset your password.</p>
+      </form>
+    );
   }
 
   if (mode !== "signin") {
@@ -78,6 +140,7 @@ export default function LoginForm({ demoPassword }: { demoPassword: string | nul
 
   return (
     <div className="auth-stack">
+      {notice && <div className="notice small" role="status">{notice}</div>}
       <form
         className="auth-form"
         onSubmit={(ev) => {

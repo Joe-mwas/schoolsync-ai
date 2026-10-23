@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, requireApiUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { parseReminderOptions, type ReminderPlan } from "@/lib/reminders";
@@ -19,10 +20,11 @@ function summary(plan: ReminderPlan) {
 /** POST { action: "preview" | "send", classId, minBalance, skipDays, note } */
 export async function POST(req: Request) {
   try {
-    await requireApiUser(OFFICE);
+    const user = await requireApiUser(OFFICE);
     const input = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const opts = parseReminderOptions(await readDb(), input);
     const plan = input.action === "send" ? await startReminders(opts) : await reminderPlan(opts);
+    if (input.action === "send") await logActivity(req, user, "messages", "Sent fee reminders", `${plan.reminders.length} parents`);
     return Response.json({ sending: input.action === "send", ...summary(plan) });
   } catch (err) {
     return errorResponse(err);

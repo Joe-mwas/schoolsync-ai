@@ -9,8 +9,15 @@ import SchoolScene from "./SchoolScene";
 import ThemeToggle from "@/components/ThemeToggle";
 import { currentTheme } from "@/lib/theme";
 
-export default async function LoginPage() {
+const SIGNED_OUT: Record<string, string> = {
+  idle: "You were signed out because there was no activity for a while. Sign in again to continue.",
+  expired: "Your session ended. Sign in again to continue.",
+};
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (await getCurrentUser()) redirect("/dashboard");
+  const { signedOut } = await searchParams;
+  const notice = typeof signedOut === "string" ? SIGNED_OUT[signedOut] ?? null : null;
   const showDemo = process.env.NODE_ENV !== "production" || process.env.SHOW_DEMO_ACCOUNTS === "1";
   const { profile } = await readDb();
   const school = profile.name || process.env.SCHOOL_NAME?.trim() ? schoolName() : null;
@@ -34,7 +41,7 @@ export default async function LoginPage() {
             <h1 className="auth-title">Welcome back</h1>
             <p className="muted" style={{ margin: 0 }}>Sign in to your school&apos;s communication hub.</p>
           </div>
-          <LoginForm demoPassword={showDemo ? DEMO_PASSWORD : null} />
+          <LoginForm demoPassword={showDemo ? DEMO_PASSWORD : null} notice={notice} />
           <div className="credit">Prepared by <strong>Joe the Techie</strong></div>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { dataFile, mutateDb } from "@/lib/db";
 import { deleteDocumentFile, MAX_DOCUMENT_BYTES, saveDocumentFile } from "@/lib/documents";
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
       await deleteDocumentFile(dataFile(), doc);
       throw err;
     }
+    await logActivity(req, actor, "data", "Uploaded a document", doc.title);
     return Response.json({ document: doc }, { status: 201 });
   } catch (err) {
     return errorResponse(err);
