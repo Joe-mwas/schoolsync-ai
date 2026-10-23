@@ -1,4 +1,4 @@
-import BrandMark from "@/components/BrandMark";
+import BrandMark, { Wordmark } from "@/components/BrandMark";
 import { redirect } from "next/navigation";
 import { schoolName } from "@/lib/ai";
 import { getCurrentUser } from "@/lib/auth";
@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="auth-inner">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div className="brand">
-              <BrandMark /> SchoolSync AI
+              <BrandMark size={34} animated /> <Wordmark animated />
             </div>
             <ThemeToggle initial={await currentTheme()} />
           </div>

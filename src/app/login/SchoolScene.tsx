@@ -8,7 +8,8 @@ import { useEffect, useRef } from "react";
  * (see .scene-* in globals.css): only transforms and opacity move, so it
  * stays smooth on cheap phones. Layers shift a little with the pointer for
  * depth; Dark mode turns it into a night scene; it stands still for people
- * who prefer reduced motion.
+ * who prefer reduced motion. Glowing dots carry messages between the school
+ * and the homes on the hill, both ways: the "Sync" in SchoolSync.
  */
 
 const v = (name: string) => ({ fill: `var(${name})` });
@@ -35,6 +36,12 @@ function Kid({ shirt, bag, skin, hair, delay, scale = 1 }: { shirt: string; bag:
     </g>
   );
 }
+
+/** The homes on the hill and the arc each one's messages travel along, from the school roof. */
+const HOMES = [
+  { x: 300, y: 362, path: "M655 186 Q470 50 300 320" },
+  { x: 478, y: 368, path: "M655 186 Q565 120 478 326" },
+];
 
 function Bird({ x, y, s = 1, delay }: { x: number; y: number; s?: number; delay: string }) {
   return (
@@ -67,7 +74,7 @@ export default function SchoolScene() {
   }, []);
 
   return (
-    <svg ref={ref} className="scene" viewBox="0 0 800 600" preserveAspectRatio="xMaxYMax slice" role="img" aria-label="Learners walking to school as the school bus pulls in">
+    <svg ref={ref} className="scene" viewBox="0 0 800 600" preserveAspectRatio="xMaxYMax slice" role="img" aria-label="Learners walking to school as the school bus pulls in, while messages travel between the school and families’ homes">
       <defs>
         <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" style={stop("--sc-sky-top")} />
@@ -130,6 +137,16 @@ export default function SchoolScene() {
             <circle cx={x - 12} cy="351" r="13" style={v("--sc-leaf-2")} />
           </g>
         ))}
+        {/* families' homes, kept in sync with the school */}
+        {HOMES.map(({ x, y }) => (
+          <g key={x}>
+            <rect x={x - 17} y={y - 22} width="34" height="24" rx="2" style={v("--sc-home")} />
+            <polygon points={`${x - 22},${y - 21} ${x},${y - 38} ${x + 22},${y - 21}`} style={v("--sc-roof")} />
+            <rect x={x - 4} y={y - 12} width="8" height="14" rx="1.5" style={v("--sc-door")} />
+            <rect x={x + 7} y={y - 16} width="7" height="7" rx="1" style={v("--sc-window")} />
+            <rect x={x + 7} y={y - 16} width="7" height="7" rx="1" className="scene-window-light" />
+          </g>
+        ))}
       </g>
 
       {/* the school */}
@@ -160,6 +177,27 @@ export default function SchoolScene() {
           <rect x="528" y="241" width="40" height="8" fill="#bb0000" />
           <rect x="528" y="249" width="40" height="3" fill="#fff" />
           <rect x="528" y="252" width="40" height="8" fill="#006600" />
+        </g>
+      </g>
+
+      {/* SchoolSync: messages travel between the school and the homes, both ways */}
+      <g className="scene-depth scene-depth-3">
+        <g className="scene-enter" style={{ animationDelay: "1.2s" }}>
+          {HOMES.map(({ path }, i) => (
+            <g key={path}>
+              <path className="scene-sync-line" d={path} style={{ animationDelay: `${-i * 0.4}s` }} />
+              <circle className="scene-sync-dot" r="4.5">
+                <animateMotion dur="3.6s" begin={`${1.6 + i * 1.1}s`} repeatCount="indefinite" path={path} keyPoints="0;1;1" keyTimes="0;0.6;1" calcMode="spline" keySplines="0.45 0 0.55 1;0 0 1 1" />
+                <animate attributeName="opacity" dur="3.6s" begin={`${1.6 + i * 1.1}s`} repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;0.1;0.5;0.6;1" />
+              </circle>
+              <circle className="scene-sync-dot is-reply" r="3.5">
+                <animateMotion dur="3.6s" begin={`${3.4 + i * 1.1}s`} repeatCount="indefinite" path={path} keyPoints="1;0;0" keyTimes="0;0.6;1" calcMode="spline" keySplines="0.45 0 0.55 1;0 0 1 1" />
+                <animate attributeName="opacity" dur="3.6s" begin={`${3.4 + i * 1.1}s`} repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;0.1;0.5;0.6;1" />
+              </circle>
+            </g>
+          ))}
+          <circle className="scene-sync-ping" cx="655" cy="186" r="10" />
+          <circle className="scene-sync-ping" cx="655" cy="186" r="10" style={{ animationDelay: "1.2s" }} />
         </g>
       </g>
 
