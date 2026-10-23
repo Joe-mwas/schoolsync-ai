@@ -15,6 +15,7 @@ import { ASSIGNMENT_SETTERS, DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS,
 
 const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/noticeboard", label: "📌 Noticeboard" },
   { href: "/announcements", label: "Announcements" },
   // The director's AI Assistant is the School AI (school and families only; system questions go to the administrator).
   { href: "/assistant", label: "AI Assistant", roles: ["admin", "headteacher", "secretary", "teacher", "parent", "student"] },

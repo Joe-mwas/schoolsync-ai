@@ -35,7 +35,7 @@ export function notificationsFor(user: User, db: Database, now = new Date(), lim
       kind: a.posterId ? "poster" : "announcement",
       title: `${a.posterId ? "New poster" : a.priority === "urgent" ? "Urgent announcement" : "New announcement"}: ${a.title}`,
       body: clip(a.body),
-      href: "/dashboard#noticeboard",
+      href: `/noticeboard#a-${a.id}`,
       at: a.createdAt,
     });
   }
