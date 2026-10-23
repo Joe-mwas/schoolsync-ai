@@ -1,6 +1,6 @@
 import { baseLevel, type BaseLevel } from "./cbc.ts";
 import { feeStatement } from "./fees.ts";
-import { examsFor, examPerformance } from "./results.ts";
+import { examInfo, examsFor, examPerformance } from "./results.ts";
 import type { Database } from "./types.ts";
 
 /** The figures behind the dashboard charts. Pure, so they're easy to test. */
@@ -73,9 +73,20 @@ export interface ExamPoint {
   learners: number;
 }
 
+/**
+ * The school-wide exams, newest first: openers, mid- and end-term exams.
+ * Small quizzes and CATs (often one or two subjects) are left out, unless
+ * they're all there is.
+ */
+export function mainExams(db: Database): string[] {
+  const all = examsFor(db);
+  const main = all.filter((e) => examInfo(db, e).type !== "quiz");
+  return main.length ? main : all;
+}
+
 /** How the whole school did in each exam, oldest first (the last `limit` exams). */
 export function performanceTrend(db: Database, limit = 8): ExamPoint[] {
-  return examsFor(db)
+  return mainExams(db)
     .slice(0, limit)
     .reverse()
     .map((exam) => {
@@ -93,7 +104,7 @@ export interface ClassLevels {
 }
 
 /** Each class's spread of CBC levels in one exam (the latest by default). */
-export function classLevels(db: Database, exam = examsFor(db)[0]): { exam: string | null; classes: ClassLevels[] } {
+export function classLevels(db: Database, exam = mainExams(db)[0]): { exam: string | null; classes: ClassLevels[] } {
   if (!exam) return { exam: null, classes: [] };
   return {
     exam,

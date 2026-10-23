@@ -240,6 +240,7 @@ function LearnerCard({ db, learner, showFees }: { db: Database; learner: User; s
             ` · last payment ${[...fees.entries].reverse().find((e) => e.kind === "payment")!.date}`}
         </div>
       )}
+      {showFees && <Link href={`/results?child=${learner.id}`} className="small">See all results: quizzes, CATs and exams →</Link>}
       <div className="small muted">Tip: message the school on WhatsApp and reply 1 for results{showFees ? " or 2 for fees" : ""}.</div>
     </div>
   );

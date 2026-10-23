@@ -179,8 +179,28 @@ export interface ResultEntry {
   area: string;
   /** EE, ME, AE or BE, optionally with a sub-level (EE1, EE2, …). */
   level: string;
+  /** Marks scored, when the assessment is marked out of a number (the level is worked out from them). */
+  score?: number | null;
   updatedAt: string;
   updatedBy: string | null;
+}
+
+export const ASSESSMENT_TYPES = {
+  quiz: "Quiz / CAT / test",
+  opener: "Opener exam",
+  midterm: "Mid-term exam",
+  endterm: "End-term exam",
+  other: "Other assessment",
+} as const;
+export type AssessmentType = keyof typeof ASSESSMENT_TYPES;
+
+/** What kind of assessment an exam name is, and whether it's marked out of a number. */
+export interface ExamInfo {
+  name: string;
+  type: AssessmentType;
+  /** e.g. 20 for a quiz marked out of 20; null when levels are entered directly. */
+  outOf: number | null;
+  updatedAt: string;
 }
 
 /** The teacher's overall comment for one learner in one exam. */
@@ -254,6 +274,7 @@ export interface Database {
   aiLogs: AiLogEntry[];
   results: ResultEntry[];
   resultComments: ResultComment[];
+  exams: ExamInfo[];
   fees: FeeEntry[];
   facts: SchoolFact[];
   mpesaPayments: MpesaPayment[];

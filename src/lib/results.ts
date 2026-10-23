@@ -1,7 +1,7 @@
-import { baseLevel, describeLevel, levelScore, normalizeLevel } from "./cbc.ts";
+import { baseLevel, describeLevel, levelFromPercent, levelScore, normalizeLevel } from "./cbc.ts";
 import { HttpError } from "./errors.ts";
 import { parseCsv } from "./importer.ts";
-import { isLeader, type Database, type ResultEntry, type User } from "./types.ts";
+import { ASSESSMENT_TYPES, isLeader, type AssessmentType, type Database, type ExamInfo, type ResultEntry, type User } from "./types.ts";
 
 /** Teachers record results for their own classes; leaders and the headteacher for any class. */
 export function canEditResults(user: User, classId: string): boolean {
@@ -25,28 +25,87 @@ export function examsFor(db: Pick<Database, "results">, studentIds?: string[]): 
   return [...latest.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(([exam]) => exam);
 }
 
+/** A guess from the name, for exams recorded before types existed: "CAT 2", "Opener", "Mid-term", "End-term". */
+export function inferType(name: string): AssessmentType {
+  const n = name.toLowerCase();
+  if (/\b(quiz|cat|test|assignment|assessment \d|weekly|monthly)\b/.test(n)) return "quiz";
+  if (/\bopen(er|ing)\b/.test(n)) return "opener";
+  if (/\bmid[\s-]?term\b|\bmid\b/.test(n)) return "midterm";
+  if (/\bend[\s-]?(of[\s-]?)?term\b|\bend[\s-]?year\b|\bfinal\b/.test(n)) return "endterm";
+  return "other";
+}
+
+/** An exam's type and marks, as set by the teacher (or guessed from its name). */
+export function examInfo(db: Pick<Database, "exams">, name: string): ExamInfo {
+  const saved = (db.exams ?? []).find((e) => same(e.name, name));
+  return saved ?? { name, type: inferType(name), outOf: null, updatedAt: "" };
+}
+
+export function setExamInfo(db: Database, name: string, input: { type?: unknown; outOf?: unknown }): ExamInfo {
+  const current = examInfo(db, name);
+  const type = typeof input.type === "string" && input.type in ASSESSMENT_TYPES ? (input.type as AssessmentType) : current.type;
+  let outOf = current.outOf;
+  if (input.outOf !== undefined) {
+    if (input.outOf === null || input.outOf === "") outOf = null;
+    else {
+      const n = Number(input.outOf);
+      if (!Number.isFinite(n) || n <= 0 || n > 1000) throw new HttpError(400, "\"Marked out of\" must be a number such as 20, 50 or 100");
+      outOf = Math.round(n * 10) / 10;
+    }
+  }
+  const info: ExamInfo = { name: name.trim(), type, outOf, updatedAt: new Date().toISOString() };
+  if (!Array.isArray(db.exams)) db.exams = [];
+  db.exams = db.exams.filter((e) => !same(e.name, name)).concat(info);
+  return info;
+}
+
+/**
+ * Read one cell: a CBC level (EE, ME2, "Meeting expectations"…), or, when the
+ * exam is marked out of a number, marks such as 15, 15/20 or 75%, from which
+ * the level is worked out. Null for a blank cell; throws on anything else.
+ */
+export function parseCell(raw: string, outOf: number | null): { level: string; score: number | null } | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const level = normalizeLevel(t);
+  if (level) return { level, score: null };
+  if (outOf) {
+    const m = /^(\d+(?:\.\d+)?)\s*(%|\/\s*(\d+(?:\.\d+)?))?$/.exec(t);
+    if (m) {
+      const n = Number(m[1]);
+      const score = m[2] === "%" ? Math.round((n / 100) * outOf * 10) / 10 : m[3] ? Math.round((n / Number(m[3])) * outOf * 10) / 10 : n;
+      if (score > outOf) throw new HttpError(400, `${t} is more than the ${outOf} marks this is out of`);
+      return { level: levelFromPercent((score / outOf) * 100), score };
+    }
+    throw new HttpError(400, `"${t}" isn't marks out of ${outOf} or a CBC level (EE, ME, AE, BE)`);
+  }
+  throw new HttpError(400, `"${t}" isn't a CBC level: use EE, ME, AE or BE (or set "Marked out of" to enter marks)`);
+}
+
 export interface StudentReport {
   exam: string;
-  areas: { area: string; level: string }[];
+  areas: { area: string; level: string; score?: number }[];
   comment: string | null;
+  outOf?: number | null;
 }
 
 /** One learner's results for an exam (default: their most recent). */
-export function studentReport(db: Pick<Database, "results" | "resultComments">, studentId: string, exam?: string): StudentReport | null {
+export function studentReport(db: Pick<Database, "results" | "resultComments"> & Partial<Pick<Database, "exams">>, studentId: string, exam?: string): StudentReport | null {
   const chosen = exam ?? examsFor(db, [studentId])[0];
   if (!chosen) return null;
   const areas = db.results
     .filter((r) => r.studentId === studentId && r.exam === chosen)
     .sort((a, b) => a.area.localeCompare(b.area))
-    .map((r) => ({ area: r.area, level: r.level }));
+    .map((r) => (typeof r.score === "number" ? { area: r.area, level: r.level, score: r.score } : { area: r.area, level: r.level }));
   if (areas.length === 0) return null;
   const comment = db.resultComments.find((c) => c.studentId === studentId && c.exam === chosen)?.comment ?? null;
-  return { exam: chosen, areas, comment };
+  const outOf = "exams" in db ? examInfo(db as Pick<Database, "exams">, chosen).outOf : null;
+  return { exam: chosen, areas, comment, ...(outOf ? { outOf } : {}) };
 }
 
 export function formatReport(studentName: string, report: StudentReport | null): string {
   if (!report) return `${studentName}: no results have been published yet.`;
-  const lines = report.areas.map((a) => `• ${a.area}: ${describeLevel(a.level)}`);
+  const lines = report.areas.map((a) => `• ${a.area}: ${a.score !== undefined && report.outOf ? `${a.score}/${report.outOf} · ` : ""}${describeLevel(a.level)}`);
   return [`📘 ${studentName} — ${report.exam}`, ...lines, report.comment ? `Teacher's comment: ${report.comment}` : ""]
     .filter(Boolean)
     .join("\n");
@@ -63,11 +122,12 @@ export interface GridRow {
  * Save a class's results for one exam, replacing those learners' entries for
  * that exam. Every level is validated before anything changes.
  */
-export function saveResults(db: Database, actor: User, classId: string, exam: string, rows: GridRow[]): { saved: number } {
+export function saveResults(db: Database, actor: User, classId: string, exam: string, rows: GridRow[], info?: { type?: unknown; outOf?: unknown }): { saved: number } {
   const examName = exam.trim();
   if (!examName) throw new HttpError(400, "Give the exam or assessment a name, e.g. Term 3 2026 End-term");
   if (!db.classes.some((c) => c.id === classId)) throw new HttpError(400, "Unknown class");
   if (!canEditResults(actor, classId)) throw new HttpError(403, "You can only record results for your own classes");
+  const { outOf } = info ? setExamInfo(db, examName, info) : examInfo(db, examName);
 
   const now = new Date().toISOString();
   const entries: ResultEntry[] = [];
@@ -80,9 +140,23 @@ export function saveResults(db: Database, actor: User, classId: string, exam: st
     for (const [rawArea, rawLevel] of Object.entries(row.levels)) {
       const area = rawArea.trim();
       if (!area || !rawLevel?.trim()) continue;
-      const level = normalizeLevel(rawLevel);
-      if (!level) throw new HttpError(400, `"${rawLevel}" for ${student.name} (${area}) isn't a CBC level: use EE, ME, AE or BE`);
-      entries.push({ id: `r-${crypto.randomUUID().slice(0, 8)}`, studentId: student.id, exam: examName, area, level, updatedAt: now, updatedBy: actor.id });
+      let cell: ReturnType<typeof parseCell>;
+      try {
+        cell = parseCell(rawLevel, outOf);
+      } catch (err) {
+        throw new HttpError(400, `${student.name} (${area}): ${(err as Error).message}`);
+      }
+      if (!cell) continue;
+      entries.push({
+        id: `r-${crypto.randomUUID().slice(0, 8)}`,
+        studentId: student.id,
+        exam: examName,
+        area,
+        level: cell.level,
+        ...(cell.score !== null ? { score: cell.score } : {}),
+        updatedAt: now,
+        updatedBy: actor.id,
+      });
     }
     const comment = row.comment?.trim().slice(0, 1000);
     if (comment) comments.push({ studentId: student.id, exam: examName, comment, updatedAt: now });
@@ -120,6 +194,7 @@ export function importResults(db: Database, actor: User, csv: string, exam: stri
   if (areaCols.length === 0) throw new HttpError(400, "Add at least one learning-area column (e.g. Mathematics) after Student name and Class");
 
   const report: ResultsImportReport = { rows: [], areas: areaCols.map((a) => a.h), saved: 0, errors: 0 };
+  const { outOf } = examInfo(db, exam);
   const byClass = new Map<string, GridRow[]>();
   table.slice(1).forEach((r, idx) => {
     const name = (r[studentCol] ?? "").trim();
@@ -136,7 +211,11 @@ export function importResults(db: Database, actor: User, csv: string, exam: stri
       for (const { h, i } of areaCols) {
         const raw = (r[i] ?? "").trim();
         if (!raw) continue;
-        if (!normalizeLevel(raw)) throw new HttpError(400, `"${raw}" under ${h} isn't EE, ME, AE or BE`);
+        try {
+          parseCell(raw, outOf);
+        } catch {
+          throw new HttpError(400, outOf ? `"${raw}" under ${h} isn't marks out of ${outOf} or a CBC level` : `"${raw}" under ${h} isn't EE, ME, AE or BE`);
+        }
         levels[h] = raw;
       }
       row.levels = Object.keys(levels).length;
@@ -197,4 +276,37 @@ export function examPerformance(db: Database, exam: string): ClassPerformance[] 
     });
   }
   return out;
+}
+
+export interface Assessment {
+  exam: string;
+  type: AssessmentType;
+  outOf: number | null;
+  /** When results were last entered (ISO). */
+  date: string;
+  areas: { area: string; level: string; score: number | null }[];
+  comment: string | null;
+  /** Overall: the average level, and the average percentage when marked. */
+  overall: { level: string; percent: number | null };
+}
+
+/** Every assessment a learner has results for, newest first: quizzes, CATs, openers, mid- and end-term exams. */
+export function learnerAssessments(db: Pick<Database, "results" | "resultComments" | "exams">, studentId: string): Assessment[] {
+  const mine = db.results.filter((r) => r.studentId === studentId);
+  return examsFor({ results: mine }).map((exam) => {
+    const info = examInfo(db, exam);
+    const rs = mine.filter((r) => r.exam === exam).sort((a, b) => a.area.localeCompare(b.area));
+    const avg = rs.reduce((n, r) => n + levelScore(r.level), 0) / rs.length;
+    const scored = info.outOf ? rs.filter((r) => typeof r.score === "number") : [];
+    const percent = scored.length ? Math.round((scored.reduce((n, r) => n + (r.score as number), 0) / (scored.length * info.outOf!)) * 100) : null;
+    return {
+      exam,
+      type: info.type,
+      outOf: info.outOf,
+      date: rs.reduce((d, r) => (r.updatedAt > d ? r.updatedAt : d), ""),
+      areas: rs.map((r) => ({ area: r.area, level: r.level, score: typeof r.score === "number" ? r.score : null })),
+      comment: db.resultComments.find((c) => c.studentId === studentId && c.exam === exam)?.comment ?? null,
+      overall: { level: percent !== null ? levelFromPercent(percent) : (["BE", "BE", "AE", "ME", "EE"] as const)[Math.round(avg)] ?? "BE", percent },
+    };
+  });
 }

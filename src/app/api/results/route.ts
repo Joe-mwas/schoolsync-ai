@@ -2,7 +2,7 @@ import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { SUGGESTED_AREAS } from "@/lib/cbc";
 import { mutateDb, readDb } from "@/lib/db";
-import { canEditResults, canViewResults, examsFor, saveResults, type GridRow } from "@/lib/results";
+import { canEditResults, canViewResults, examInfo, examsFor, saveResults, type GridRow } from "@/lib/results";
 import { STAFF } from "@/lib/types";
 
 /** GET ?classId=&exam= : the results grid for one class and exam. */
@@ -23,15 +23,19 @@ export async function GET(req: Request) {
     // Areas used in this class before, so a new exam starts with the same columns.
     const classAreas = [...new Set(db.results.filter((r) => ids.includes(r.studentId)).map((r) => r.area))];
     const areas = recorded.length ? recorded : classAreas.length ? classAreas : SUGGESTED_AREAS.slice(0, 5);
+    const info = examInfo(db, exam);
     return Response.json({
       canEdit: canEditResults(user, classId),
       exam,
       exams,
+      info: { type: info.type, outOf: info.outOf },
+      types: Object.fromEntries(exams.map((x) => [x, examInfo(db, x).type])),
       areas,
       students: learners.map((l) => ({
         id: l.id,
         name: l.name,
-        levels: Object.fromEntries(rs.filter((r) => r.studentId === l.id).map((r) => [r.area, r.level])),
+        // Marked assessments show the marks; the level is worked out again on save.
+        levels: Object.fromEntries(rs.filter((r) => r.studentId === l.id).map((r) => [r.area, info.outOf && typeof r.score === "number" ? String(r.score) : r.level])),
         comment: db.resultComments.find((c) => c.studentId === l.id && c.exam === exam)?.comment ?? "",
       })),
     });
@@ -40,13 +44,13 @@ export async function GET(req: Request) {
   }
 }
 
-/** PUT { classId, exam, rows }: save the grid. */
+/** PUT { classId, exam, type, outOf, rows }: save the grid (and the exam's type and marks). */
 export async function PUT(req: Request) {
   try {
     const user = await requireApiUser(STAFF);
-    const { classId, exam, rows } = (await req.json().catch(() => ({}))) as { classId?: string; exam?: string; rows?: GridRow[] };
+    const { classId, exam, rows, type, outOf } = (await req.json().catch(() => ({}))) as { classId?: string; exam?: string; rows?: GridRow[]; type?: unknown; outOf?: unknown };
     if (!Array.isArray(rows)) throw new HttpError(400, "Nothing to save");
-    const result = await mutateDb((db) => ({ ...saveResults(db, user, classId ?? "", exam ?? "", rows), className: db.classes.find((c) => c.id === classId)?.name ?? "" }));
+    const result = await mutateDb((db) => ({ ...saveResults(db, user, classId ?? "", exam ?? "", rows, { type, outOf }), className: db.classes.find((c) => c.id === classId)?.name ?? "" }));
     await logActivity(req, user, "results", "Saved results", `${result.className}, ${String(exam).trim()}: ${result.saved} learners`);
     const { className: _name, ...saved } = result;
     return Response.json(saved);

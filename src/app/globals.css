@@ -526,3 +526,28 @@ h2 { letter-spacing: -0.01em; }
 .activity-table td.nowrap { white-space: nowrap; }
 .activity-table tr.is-failed td:nth-child(3) { color: var(--danger); font-weight: 600; }
 .auth-code-input { font-size: 1.3rem; letter-spacing: 0.3em; text-align: center; }
+
+/* Results: marks entry, and the family results page */
+.marks-cell { display: grid; gap: 2px; min-width: 64px; }
+.marks-cell input { width: 72px; padding: 6px 8px; }
+.error-text { color: var(--danger); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.88rem; text-decoration: none; }
+.chip:hover { border-color: var(--primary); }
+.chip.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-contrast); font-weight: 600; }
+.lvl { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.lvl i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.lvl strong { font-weight: 700; }
+.lvl-EE i { background: var(--lvl-ee); }
+.lvl-ME i { background: var(--lvl-me); }
+.lvl-AE i { background: var(--lvl-ae); }
+.lvl-BE i { background: var(--lvl-be); }
+.assessment .overall { display: grid; justify-items: end; gap: 2px; }
+.progress-table th { white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 0.78rem; }
+.progress-table td.nowrap { white-space: nowrap; }
+.trend { font-weight: 600; font-size: 0.85rem; }
+.trend.up { color: var(--accent); }
+.trend.down { color: var(--danger); }
+/* Wide tables scroll inside their card instead of widening the page. */
+.main, .stack > * { min-width: 0; }
+.lvl i { display: inline-block; }
