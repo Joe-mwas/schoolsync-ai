@@ -35,6 +35,10 @@ export function migrateDatabase(db: Database, env: Record<string, string | undef
     db.aiBudget = defaultAiBudget();
     changed = true;
   }
+  if (!db.push || typeof db.push !== "object" || !Array.isArray(db.push.subscriptions)) {
+    db.push = { vapid: db.push?.vapid ?? null, subscriptions: [] };
+    changed = true;
+  }
   if (!db.insights || typeof db.insights !== "object" || Array.isArray(db.insights)) {
     db.insights = {};
     changed = true;

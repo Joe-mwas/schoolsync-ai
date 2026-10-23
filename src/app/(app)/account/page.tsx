@@ -1,4 +1,5 @@
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import { PushToggle } from "@/components/NotificationBell";
 import TwoStepCard from "@/components/TwoStepCard";
 import { isStaff, requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
@@ -17,6 +18,10 @@ export default async function AccountPage() {
         </div>
       </div>
       <PhoneForm initial={user.phone ?? ""} />
+      <section className="card stack" style={{ gap: 8 }}>
+        <h2 style={{ margin: 0 }}>Phone notifications</h2>
+        <PushToggle />
+      </section>
       <ChangePasswordForm />
       {isStaff(user) && (
         <TwoStepCard enabled={Boolean(user.twoStep)} enabledAt={user.twoStep?.enabledAt} backupLeft={user.twoStep?.backupCodes.length ?? 0} required={security.requireTwoStep} />

@@ -1,3 +1,4 @@
+import { alertResults } from "@/lib/alerts";
 import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, readDb } from "@/lib/db";
@@ -18,6 +19,11 @@ export async function POST(req: Request) {
       return importResults(db, user, csv, exam);
     };
     const report = dryRun ? run(structuredClone(await readDb())) : await mutateDb(run);
+    if (!dryRun && report.saved > 0) {
+      const db = await readDb();
+      const name = exam.trim().toLowerCase();
+      void alertResults(db.results.filter((r) => r.exam.toLowerCase() === name && r.updatedBy === user.id && Date.now() - Date.parse(r.updatedAt) < 60_000).map((r) => r.studentId), exam.trim());
+    }
     if (!dryRun) await logActivity(req, user, "results", "Imported results from a file", `${exam.trim()}: ${report.saved} saved${report.errors ? `, ${report.errors} rows with problems` : ""}`);
     return Response.json(report);
   } catch (err) {

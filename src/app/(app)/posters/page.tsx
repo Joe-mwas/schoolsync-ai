@@ -12,10 +12,14 @@ export default async function PostersPage() {
       <div className="page-header">
         <div>
           <h1>Poster Designer</h1>
-          <p>Design event posters, download them as PNG, and attach them to announcements.</p>
+          <p>Design event posters, then share them on the noticeboard: everyone you choose sees them on their dashboard, and their phones are notified.</p>
         </div>
       </div>
-      <Designer initialPosters={posters} />
+      <Designer
+        initialPosters={posters}
+        classes={db.classes.filter((c) => isSchoolWide(user.role) || user.classIds.includes(c.id)).map((c) => ({ id: c.id, name: c.name }))}
+        classRequired={!isSchoolWide(user.role)}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { alertResults } from "@/lib/alerts";
 import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { SUGGESTED_AREAS } from "@/lib/cbc";
@@ -52,6 +53,7 @@ export async function PUT(req: Request) {
     if (!Array.isArray(rows)) throw new HttpError(400, "Nothing to save");
     const result = await mutateDb((db) => ({ ...saveResults(db, user, classId ?? "", exam ?? "", rows, { type, outOf }), className: db.classes.find((c) => c.id === classId)?.name ?? "" }));
     await logActivity(req, user, "results", "Saved results", `${result.className}, ${String(exam).trim()}: ${result.saved} learners`);
+    if (result.saved > 0) void alertResults(rows.map((r) => r.studentId), String(exam).trim());
     const { className: _name, ...saved } = result;
     return Response.json(saved);
   } catch (err) {
