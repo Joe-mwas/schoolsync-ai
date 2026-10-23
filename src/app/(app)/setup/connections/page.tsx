@@ -12,6 +12,8 @@ import { encryptionConfigured } from "@/lib/dataCrypto";
 import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
 import { AiBudgetCard, CopyButton, FamilyModelPicker, SignInSecurityForm, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
 import SetupTabs from "../SetupTabs";
+import DangerZone from "../DangerZone";
+import { schoolName } from "@/lib/ai";
 
 const PILL: Record<ItemStatus, { label: string; className: string }> = {
   ok: { label: "Ready", className: "badge ok" },
@@ -200,6 +202,7 @@ export default async function ConnectionsPage() {
           </div>
         </div>
       </div>
+      <DangerZone school={db.profile.name || schoolName()} needsCode={Boolean(me.twoStep)} />
     </div>
   );
 }
