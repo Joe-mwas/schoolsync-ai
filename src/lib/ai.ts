@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
 import { assignmentsContext } from "./assignments.ts";
+import { INSIGHTS_SCHEMA, INSIGHTS_SYSTEM } from "./insights.ts";
 import { profileName } from "./schoolProfile.ts";
 import { dutiesFor, dutyWhen } from "./duties.ts";
 import { factsFor, factsPrompt } from "./facts.ts";
@@ -8,7 +9,7 @@ import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fee
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
 import { isLeader, isSchoolWide } from "./types.ts";
-import type { Database, User } from "./types.ts";
+import type { Database, Insights, User } from "./types.ts";
 
 export const MODEL = "claude-opus-5-5";
 // Server-side fallback: if a request is declined by a safety classifier, the
@@ -325,3 +326,24 @@ Plain text with WhatsApp formatting only (*bold* for section names), no tables, 
 }
 
 export { briefData };
+
+/** Read the dashboard's figures and say what's going well, what needs attention and what to do next. */
+export async function generateInsights(facts: string, school = schoolName()): Promise<Insights> {
+  const response = await getClient().beta.messages.create({
+    model: MODEL,
+    max_tokens: 8000,
+    betas: [FALLBACK_BETA],
+    fallbacks: "default",
+    output_config: { effort: "low", format: { type: "json_schema", schema: INSIGHTS_SCHEMA } },
+    system: [{ type: "text", text: INSIGHTS_SYSTEM, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: `School: ${school}. Today: ${new Date().toISOString().slice(0, 10)}.\n\n<figures>\n${facts}\n</figures>` }],
+  });
+  if (response.stop_reason === "refusal") throw new Error("The AI declined to read these figures.");
+  const text = response.content
+    .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  const parsed = JSON.parse(text) as Insights;
+  const clean = (list: unknown) => (Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && x.trim() !== "").map((x) => x.trim()).slice(0, 3) : []);
+  return { goingWell: clean(parsed.goingWell), needsAttention: clean(parsed.needsAttention), nextSteps: clean(parsed.nextSteps) };
+}

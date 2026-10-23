@@ -14,6 +14,10 @@ export function migrateDatabase(db: Database, env: Record<string, string | undef
       changed = true;
     }
   }
+  if (!db.insights || typeof db.insights !== "object" || Array.isArray(db.insights)) {
+    db.insights = {};
+    changed = true;
+  }
   if (!db.profile || typeof db.profile !== "object") {
     db.profile = emptyProfile();
     changed = true;
