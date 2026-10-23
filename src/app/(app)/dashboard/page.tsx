@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CountUp from "@/components/CountUp";
 import AnnouncementCard, { formatDate } from "@/components/AnnouncementCard";
 import { aiConfigured } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
@@ -22,11 +23,18 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="card">
+    <div className="card stat-tile">
       <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
+      <div className="stat-value"><CountUp value={value} /></div>
     </div>
   );
+}
+
+/** "Good morning" by the time in Nairobi, and today's date. */
+function greeting(now = new Date()): { hello: string; today: string } {
+  const hour = Number(now.toLocaleString("en-GB", { timeZone: "Africa/Nairobi", hour: "2-digit", hour12: false }));
+  const hello = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  return { hello, today: now.toLocaleDateString("en-GB", { timeZone: "Africa/Nairobi", weekday: "long", day: "numeric", month: "long" }) };
 }
 
 function UpcomingEvents({ db }: { db: Database }) {
@@ -303,8 +311,8 @@ export default async function DashboardPage() {
     <div className="stack">
       <div className="page-header">
         <div>
-          <h1>Welcome, {user.name.split(" ")[0]}</h1>
-          <p>{ROLE_LABELS[user.role]} dashboard</p>
+          <h1>{greeting().hello}, {user.name.split(" ")[0]}</h1>
+          <p>{greeting().today} · {ROLE_LABELS[user.role]} dashboard</p>
         </div>
       </div>
       {isSchoolWide(user.role) && <DirectorDashboard user={user} db={db} />}

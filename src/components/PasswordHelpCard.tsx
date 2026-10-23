@@ -35,7 +35,7 @@ export default function PasswordHelpCard({ requests }: { requests: HelpRow[] }) 
 
   if (requests.length === 0 && !issued) return null;
   return (
-    <div className="card stack" style={{ borderColor: "var(--primary)" }}>
+    <div className="card stack glow">
       <h2 style={{ margin: 0 }}>🔑 Password help ({requests.length})</h2>
       {issued && (
         <div className="notice">
