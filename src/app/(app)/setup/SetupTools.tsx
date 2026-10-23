@@ -115,3 +115,41 @@ export function OffsiteBackupButton() {
     </div>
   );
 }
+
+const FAMILY_OPTIONS: { value: "economy" | "balanced" | "top"; title: string; detail: string }[] = [
+  { value: "economy", title: "Economy · Claude Haiku", detail: "About KSh 0.1 per answer. Best value for everyday questions (fees, dates, uniform)." },
+  { value: "balanced", title: "Balanced · Claude Sonnet", detail: "About KSh 2 per answer. Better with long or unusual questions." },
+  { value: "top", title: "Top · Claude Opus", detail: "About KSh 4 per answer. The same model staff use." },
+];
+
+/** Which Claude model answers parents and learners; staff always get the top model. */
+export function FamilyModelPicker({ initial }: { initial: "economy" | "balanced" | "top" }) {
+  const [value, setValue] = useState(initial);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  async function choose(v: typeof value) {
+    const before = value;
+    setValue(v);
+    const res = await fetch("/api/ai-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ familyModel: v }) }).catch(() => null);
+    if (res?.ok) setMsg({ ok: true, text: "Saved. Parents' and learners' next questions use this model." });
+    else {
+      setValue(before);
+      setMsg({ ok: false, text: "Couldn't save; try again." });
+    }
+  }
+  return (
+    <fieldset className="model-picker">
+      <legend className="small" style={{ fontWeight: 600 }}>AI for parents and learners (WhatsApp and the AI Assistant)</legend>
+      {FAMILY_OPTIONS.map((o) => (
+        <label key={o.value} className={`model-option${value === o.value ? " is-on" : ""}`}>
+          <input type="radio" name="family-model" id={`family-model-${o.value}`} checked={value === o.value} onChange={() => choose(o.value)} />
+          <span>
+            <strong>{o.title}</strong>
+            <span className="small muted">{o.detail}</span>
+          </span>
+        </label>
+      ))}
+      <div className="small muted">Staff, the director&apos;s brief, AI insights and the chat buddy always use the top model.</div>
+      {msg && <div className="small" role="status" style={{ color: msg.ok ? "var(--accent)" : "var(--danger)" }}>{msg.ok ? "✓ " : ""}{msg.text}</div>}
+    </fieldset>
+  );
+}
