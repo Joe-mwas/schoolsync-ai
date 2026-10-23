@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/permissions";
+import EraseLog from "./EraseLog";
 import { ACTIVITY_KINDS, type ActivityEntry, type ActivityKind } from "@/lib/types";
 
 const PAGE = 200;
@@ -40,7 +41,10 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           <h1>Activity log</h1>
           <p>Who signed in, who changed what, and when. Kept with the school&apos;s data (encrypted and backed up with it); the latest 5,000 entries are kept.</p>
         </div>
-        {failedToday > 0 && <span className="badge urgent">{failedToday} failed sign-in{failedToday === 1 ? "" : "s"} in 24 hours</span>}
+        <div className="row" style={{ gap: 8 }}>
+          {failedToday > 0 && <span className="badge urgent">{failedToday} failed sign-in{failedToday === 1 ? "" : "s"} in 24 hours</span>}
+          <EraseLog count={db.activity.length} />
+        </div>
       </div>
 
       <form className="card row activity-filters" method="get">

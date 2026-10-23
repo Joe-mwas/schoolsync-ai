@@ -609,3 +609,5 @@ label.check-row input { width: auto; margin-top: 4px; flex: none; }
   border-right-color: #0d1222;
 }
 :root:not([data-theme="dark"]) .sidebar .nav a.active { background: rgba(157, 176, 255, 0.12); }
+.erase-log { max-width: 420px; gap: 10px; border-color: var(--danger); }
+.page-header:has(.erase-log) { flex-wrap: wrap; }
