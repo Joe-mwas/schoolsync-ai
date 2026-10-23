@@ -294,6 +294,8 @@ export interface Database {
   aiBudget: AiBudget;
   /** Who did what, newest last (capped). */
   activity: ActivityEntry[];
+  /** Fingerprint of the last emergency admin reset applied (ADMIN_RESET_PASSWORD), so each is applied once. */
+  adminResetMark?: string;
 }
 
 /** A month's AI spending, from the token counts Claude reports. */
