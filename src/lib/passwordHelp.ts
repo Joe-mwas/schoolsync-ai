@@ -3,7 +3,7 @@ import { generateTemporaryPassword } from "./password.ts";
 import { ROLE_LABELS } from "./permissions.ts";
 import { phoneKey } from "./phone.ts";
 import { ROLES, type Database, type PasswordHelpRequest, type Role, type User } from "./types.ts";
-import { findBySignInName, setPassword } from "./users.ts";
+import { createPerson, findBySignInName, setPassword } from "./users.ts";
 
 /**
  * "Forgot your password?" on the sign-in page: the person leaves their
@@ -57,7 +57,7 @@ export function requestPasswordHelp(db: Database, input: PasswordHelpInput): { r
 /** The account a request matched, described for the administrator. */
 export function describeAccount(db: Pick<Database, "users">, r: PasswordHelpRequest): string {
   const u = r.userId ? db.users.find((x) => x.id === r.userId) : undefined;
-  if (!u) return "No account matches these details. Check them, or add the person in School Admin.";
+  if (!u) return "No account matches these details. Check them, then add the person with one click.";
   return `${u.name} (${ROLE_LABELS[u.role]}${u.email ? `, ${u.email}` : ""}${u.phone ? `, ${u.phone}` : ""})`;
 }
 
@@ -70,7 +70,7 @@ export function passwordHelpMessage(db: Pick<Database, "users">, r: PasswordHelp
     ...(r.role ? [`Role chosen: ${ROLE_LABELS[r.role]}`] : []),
     `Account: ${describeAccount(db, r)}`,
     ...(r.note ? [`Note: ${r.note}`] : []),
-    `Open your SchoolSync dashboard and click Reset password to give them a temporary one.`,
+    r.userId ? `Open your SchoolSync dashboard and click Reset password to give them a temporary one.` : `Open your SchoolSync dashboard: if they belong to the school, click Add & give password.`,
     `— ${schoolName}`,
   ].join("\n");
 }
@@ -97,4 +97,46 @@ export function dismissRequest(db: Database, admin: User, id: string): PasswordH
   if (r.status !== "open") throw new HttpError(409, "This request was already handled");
   Object.assign(r, { status: "dismissed", handledAt: new Date().toISOString(), handledBy: admin.id });
   return r;
+}
+
+export interface AddFromRequestInput {
+  role?: unknown;
+  classId?: unknown;
+  childId?: unknown;
+}
+
+/**
+ * Someone without an account asked for help: the administrator checks the
+ * details, confirms the role (and a class or child), and the account is
+ * created from the request with a temporary password (shown once).
+ */
+export function addFromRequest(db: Database, admin: User, id: string, input: AddFromRequestInput): { password: string; user: User } {
+  if (admin.role !== "admin") throw new HttpError(403, "Only the administrator handles password requests");
+  const r = db.passwordHelp.find((x) => x.id === id);
+  if (!r) throw new HttpError(404, "Request not found");
+  if (r.status !== "open") throw new HttpError(409, "This request was already handled");
+  if (findBySignInName(db, r.contact)) throw new HttpError(409, "Someone already signs in with these details; use Reset password instead");
+  const role = typeof input.role === "string" && (ROLES as readonly string[]).includes(input.role) ? (input.role as Role) : r.role;
+  if (!role) throw new HttpError(400, "Choose the person's role");
+  // A request from the sign-in page can't create an administrator: that's done deliberately in School Admin.
+  if (role === "admin") throw new HttpError(400, "Add administrators in School Admin");
+  const byEmail = r.contact.includes("@");
+  const classId = typeof input.classId === "string" && input.classId ? input.classId : null;
+  const childId = typeof input.childId === "string" && input.childId ? input.childId : null;
+  const password = generateTemporaryPassword();
+  const user = createPerson(
+    db,
+    {
+      name: r.name,
+      role,
+      email: byEmail ? r.contact : "",
+      phone: byEmail ? "" : r.contact,
+      classIds: classId && (role === "teacher" || role === "student") ? [classId] : [],
+      childIds: childId && role === "parent" ? [childId] : [],
+      password,
+    },
+    () => `u-${crypto.randomUUID().slice(0, 8)}`,
+  );
+  Object.assign(r, { status: "added", userId: user.id, handledAt: new Date().toISOString(), handledBy: admin.id });
+  return { password, user };
 }
