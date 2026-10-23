@@ -26,7 +26,7 @@ export default function BriefCard() {
   }
 
   return (
-    <div className="card stack">
+    <div className="card stack glow">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2>Brief me</h2>
         <span className="small muted">Or send &quot;brief&quot; to the school&apos;s WhatsApp number</span>

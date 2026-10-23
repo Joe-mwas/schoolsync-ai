@@ -52,7 +52,7 @@ export default async function OnboardingPage() {
         </div>
       </div>
 
-      <section className="card stack onboarding-progress" aria-labelledby="progress-title">
+      <section className="card stack onboarding-progress glow" aria-labelledby="progress-title">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
             <h2 id="progress-title" style={{ margin: 0 }}>{p.name || schoolName()}</h2>
