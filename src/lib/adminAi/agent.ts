@@ -156,7 +156,7 @@ async function handleTool(user: User, profile: Profile, block: Anthropic.Beta.Be
  * proposals; a director gets the read-only School AI (fees, events,
  * activities, families) and forwards system questions to the administrator.
  */
-export async function runAdminTurn(user: User, history: ChatTurn[]): Promise<AdminTurnResult> {
+export async function runAdminTurn(user: User, history: ChatTurn[], opts: { fast?: boolean } = {}): Promise<AdminTurnResult> {
   if (user.role !== "admin" && user.role !== "director" && user.role !== "headteacher") throw new HttpError(403, "Not allowed");
   const profile: Profile = user.role === "admin" ? "admin" : "director";
   const messages = toMessages(history);
@@ -172,8 +172,9 @@ export async function runAdminTurn(user: User, history: ChatTurn[]): Promise<Adm
       max_tokens: 16000,
       betas: [FALLBACK_BETA],
       fallbacks: "default",
-      output_config: { effort: "medium" },
-      system,
+      // The chat buddy asks for quick answers; the full Admin AI page thinks harder.
+      output_config: { effort: opts.fast ? "low" : "medium" },
+      system: opts.fast ? [...system, { type: "text", text: "You're answering in the small chat bubble: keep replies short (a few lines) unless asked for detail." }] : system,
       tools: profile === "admin" ? ADMIN_TOOLS : DIRECTOR_TOOLS,
       messages,
     });
