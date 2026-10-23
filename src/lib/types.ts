@@ -149,7 +149,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | "password-help" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | "password-help" | "ai-budget" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -179,8 +179,28 @@ export interface ResultEntry {
   area: string;
   /** EE, ME, AE or BE, optionally with a sub-level (EE1, EE2, …). */
   level: string;
+  /** Marks scored, when the assessment is marked out of a number (the level is worked out from them). */
+  score?: number | null;
   updatedAt: string;
   updatedBy: string | null;
+}
+
+export const ASSESSMENT_TYPES = {
+  quiz: "Quiz / CAT / test",
+  opener: "Opener exam",
+  midterm: "Mid-term exam",
+  endterm: "End-term exam",
+  other: "Other assessment",
+} as const;
+export type AssessmentType = keyof typeof ASSESSMENT_TYPES;
+
+/** What kind of assessment an exam name is, and whether it's marked out of a number. */
+export interface ExamInfo {
+  name: string;
+  type: AssessmentType;
+  /** e.g. 20 for a quiz marked out of 20; null when levels are entered directly. */
+  outOf: number | null;
+  updatedAt: string;
 }
 
 /** The teacher's overall comment for one learner in one exam. */
@@ -254,6 +274,7 @@ export interface Database {
   aiLogs: AiLogEntry[];
   results: ResultEntry[];
   resultComments: ResultComment[];
+  exams: ExamInfo[];
   fees: FeeEntry[];
   facts: SchoolFact[];
   mpesaPayments: MpesaPayment[];
@@ -270,8 +291,31 @@ export interface Database {
   insights: Partial<Record<InsightScope, SavedInsights>>;
   aiSettings: AiSettings;
   security: SecuritySettings;
+  aiBudget: AiBudget;
   /** Who did what, newest last (capped). */
   activity: ActivityEntry[];
+}
+
+/** A month's AI spending, from the token counts Claude reports. */
+export interface AiMonth {
+  usd: number;
+  calls: number;
+  /** Spending per feature (WhatsApp, assistant, brief…), in US dollars. */
+  byFeature: Record<string, number>;
+}
+
+/** The school's AI budget: a monthly limit, a manual off switch, and what's been spent. */
+export interface AiBudget {
+  /** Pause the AI once this month's spending reaches this many shillings; null = no limit. */
+  monthlyLimitKsh: number | null;
+  /** The administrator switched the AI off (manual mode). */
+  off: boolean;
+  /** "YYYY-MM" (Nairobi) → spending; the last 12 months are kept. */
+  months: Record<string, AiMonth>;
+  /** Alerts already sent this month, so each goes once. */
+  alerts: { month: string; warned: boolean; reached: boolean };
+  /** When Claude last refused for lack of credit; cleared by the next answer. */
+  creditsOutAt: string | null;
 }
 
 /** Choices for signing staff out after a while without activity, in minutes. */

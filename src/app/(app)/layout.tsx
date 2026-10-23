@@ -19,7 +19,7 @@ const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/assistant", label: "AI Assistant", roles: ["admin", "headteacher", "secretary", "teacher", "parent", "student"] },
   { href: "/school-ai", label: "AI Assistant", roles: ["director"] },
   { href: "/assignments", label: "Assignments & revision", roles: ["student"] },
-  { href: "/results", label: "Results", roles: STAFF },
+  { href: "/results", label: "Results", roles: [...STAFF, "parent"] },
   { href: "/assignments", label: "Assignments", roles: ASSIGNMENT_SETTERS },
   { href: "/fees", label: "Fees", roles: FEE_VIEWERS },
   { href: "/facts", label: "School facts", roles: OFFICE },

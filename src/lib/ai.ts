@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { aiRunning, assertAiAllowed, noteAiError, recordAiUsage } from "./aiBudget.ts";
 import { briefData, formatBrief, type BriefData } from "./brief.ts";
 import { assignmentsContext } from "./assignments.ts";
 import { INSIGHTS_SCHEMA, INSIGHTS_SYSTEM } from "./insights.ts";
@@ -25,6 +26,22 @@ export function aiConfigured(): boolean {
 export function getClient(): Anthropic {
   client ??= new Anthropic();
   return client;
+}
+
+/**
+ * Every request to Claude goes through here: refused while the AI is paused
+ * (switched off or over the monthly budget), and its cost is recorded.
+ */
+export async function askClaude(feature: string, params: Anthropic.Beta.Messages.MessageCreateParamsNonStreaming): Promise<Anthropic.Beta.Messages.BetaMessage> {
+  await assertAiAllowed();
+  try {
+    const response = await getClient().beta.messages.create(params);
+    await recordAiUsage(feature, response.model || params.model, response.usage);
+    return response;
+  } catch (err) {
+    await noteAiError(err);
+    throw err;
+  }
 }
 
 const BASE_SYSTEM = `You are SchoolSync Assistant, the AI helper for a school's communication platform.
@@ -157,6 +174,7 @@ export async function* streamAssistantReply(
   messages: Anthropic.Beta.BetaMessageParam[],
 ): AsyncGenerator<string> {
   const model = modelFor(user, db);
+  await assertAiAllowed();
   const stream = getClient().beta.messages.stream({
     model,
     max_tokens: 64000,
@@ -166,13 +184,19 @@ export async function* streamAssistantReply(
     messages,
   });
 
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      yield event.delta.text;
+  let final: Anthropic.Beta.Messages.BetaMessage;
+  try {
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        yield event.delta.text;
+      }
     }
+    final = await stream.finalMessage();
+  } catch (err) {
+    await noteAiError(err);
+    throw err;
   }
-
-  const final = await stream.finalMessage();
+  await recordAiUsage(user.role === "parent" || user.role === "student" ? "assistant-family" : "assistant-staff", final.model || model, final.usage);
   if (final.stop_reason === "refusal") {
     yield "\n\nSorry, I can't help with that request.";
   }
@@ -181,7 +205,7 @@ export async function* streamAssistantReply(
 /** One-shot reply, used for WhatsApp auto-responses. */
 export async function generateReply(user: User, db: Database, text: string): Promise<string> {
   const model = modelFor(user, db);
-  const response = await getClient().beta.messages.create({
+  const response = await askClaude(user.role === "parent" || user.role === "student" ? "whatsapp-family" : "whatsapp-staff", {
     model,
     max_tokens: 16000,
     ...fallbackFor(model),
@@ -223,7 +247,7 @@ const DRAFT_SCHEMA = {
 
 /** Turn rough notes into a polished announcement. */
 export async function draftAnnouncement(user: User, db: Database, notes: string): Promise<AnnouncementDraft> {
-  const response = await getClient().beta.messages.create({
+  const response = await askClaude("announcement", {
     model: MODEL,
     max_tokens: 16000,
     betas: [FALLBACK_BETA],
@@ -264,6 +288,7 @@ export async function testAiConnection(): Promise<ConnectionTestResult> {
       output_config: { effort: "low" },
       messages: [{ role: "user", content: "This is a connection test from a school app. Reply with the single word: Connected" }],
     });
+    await recordAiUsage("test", response.model, response.usage);
     const text = response.content
       .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
       .map((b) => b.text)
@@ -271,6 +296,7 @@ export async function testAiConnection(): Promise<ConnectionTestResult> {
       .trim();
     return { ok: true, message: `Claude replied: "${text.slice(0, 80)}" (model ${response.model}).` };
   } catch (err) {
+    await noteAiError(err);
     if (err instanceof Anthropic.AuthenticationError) {
       return { ok: false, message: "The API key was rejected. It may be mistyped or deleted; create a new key at platform.claude.com → Settings → API Keys." };
     }
@@ -307,9 +333,9 @@ export function schoolName(env: Record<string, string | undefined> = process.env
  */
 export async function writeBrief(db: Database, data: BriefData): Promise<{ text: string; usedAi: boolean }> {
   const plain = formatBrief(schoolName(), data);
-  if (!aiConfigured()) return { text: plain, usedAi: false };
+  if (!(await aiRunning())) return { text: plain, usedAi: false };
   try {
-    const response = await getClient().beta.messages.create({
+    const response = await askClaude("brief", {
       model: MODEL,
       max_tokens: 16000,
       betas: [FALLBACK_BETA],
@@ -350,7 +376,7 @@ export { briefData };
 
 /** Read the dashboard's figures and say what's going well, what needs attention and what to do next. */
 export async function generateInsights(facts: string, school = schoolName()): Promise<Insights> {
-  const response = await getClient().beta.messages.create({
+  const response = await askClaude("insights", {
     model: MODEL,
     max_tokens: 8000,
     betas: [FALLBACK_BETA],

@@ -1,3 +1,4 @@
+import { assertAiAllowed } from "@/lib/aiBudget";
 import { aiConfigured, draftAnnouncement } from "@/lib/ai";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { logAiExchange } from "@/lib/aiLog";
@@ -8,6 +9,7 @@ export async function POST(req: Request) {
   try {
     const user = await requireApiUser(STAFF);
     if (!aiConfigured()) throw new HttpError(503, "AI is not configured. Set ANTHROPIC_API_KEY.");
+    await assertAiAllowed();
     const { notes } = (await req.json().catch(() => ({}))) as { notes?: string };
     if (!notes?.trim()) throw new HttpError(400, "Write a few notes for the assistant to work from");
     const draft = await draftAnnouncement(user, await readDb(), notes.trim());

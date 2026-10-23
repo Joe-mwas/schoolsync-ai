@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { budgetView } from "@/lib/aiBudget";
 import { isStaff, requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { listSnapshots } from "@/lib/backup";
@@ -9,7 +10,7 @@ import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "
 import { webhookActivity } from "@/lib/webhookActivity";
 import { encryptionConfigured } from "@/lib/dataCrypto";
 import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
-import { CopyButton, FamilyModelPicker, SignInSecurityForm, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
+import { AiBudgetCard, CopyButton, FamilyModelPicker, SignInSecurityForm, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
 import SetupTabs from "../SetupTabs";
 
 const PILL: Record<ItemStatus, { label: string; className: string }> = {
@@ -137,6 +138,9 @@ export default async function ConnectionsPage() {
         <Checklist section={ai} />
         <TestButton kind="ai" label="Test AI" />
         <FamilyModelPicker initial={db.aiSettings.familyModel} />
+        <div id="ai-budget">
+          <AiBudgetCard view={budgetView(db.aiBudget)} />
+        </div>
       </div>
 
       <div className="card stack">

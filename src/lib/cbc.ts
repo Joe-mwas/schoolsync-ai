@@ -59,3 +59,12 @@ export function levelScore(level: string): number {
 export function describeLevel(level: string): string {
   return `${level} (${LEVEL_NAMES[baseLevel(level)] ?? "?"})`;
 }
+
+/**
+ * The CBC level for a percentage of marks, on KNEC's eight-level rubric:
+ * EE1 90+, EE2 75+, ME1 58+, ME2 41+, AE1 31+, AE2 21+, BE1 11+, BE2 below.
+ */
+export function levelFromPercent(percent: number): string {
+  const bands: [number, string][] = [[90, "EE1"], [75, "EE2"], [58, "ME1"], [41, "ME2"], [31, "AE1"], [21, "AE2"], [11, "BE1"]];
+  return bands.find(([min]) => percent >= min)?.[1] ?? "BE2";
+}

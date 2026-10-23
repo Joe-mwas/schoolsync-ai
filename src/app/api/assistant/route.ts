@@ -1,3 +1,4 @@
+import { assertAiAllowed } from "@/lib/aiBudget";
 import type Anthropic from "@anthropic-ai/sdk";
 import { aiConfigured, streamAssistantReply } from "@/lib/ai";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
   try {
     const user = await requireApiUser();
     if (!aiConfigured()) throw new HttpError(503, "AI is not configured. Set ANTHROPIC_API_KEY.");
+    await assertAiAllowed();
 
     const { messages } = (await req.json().catch(() => ({}))) as { messages?: ChatTurn[] };
     const history: Anthropic.Beta.BetaMessageParam[] = (messages ?? [])

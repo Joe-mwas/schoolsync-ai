@@ -1,4 +1,5 @@
-import { emptyProfile } from "./migrate.ts";
+import { levelFromPercent } from "./cbc.ts";
+import { defaultAiBudget, emptyProfile } from "./migrate.ts";
 import { hashPassword } from "./password.ts";
 import type { Database } from "./types.ts";
 
@@ -45,6 +46,8 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     aiSettings: { familyModel: "economy" },
     security: { requireTwoStep: false, idleMinutes: 30 },
     activity: [],
+    exams: [],
+    aiBudget: defaultAiBudget(),
   };
 }
 
@@ -71,6 +74,14 @@ export function withDemoHistory(db: Database): Database {
       ...demoResults("u-student1", { English: "ME", Kiswahili: "AE", Mathematics: "ME", "Integrated Science": "ME", "Social Studies": "AE" }, "Term 2 2026 End-term", -90),
       ...demoResults("u-student2", { English: "ME", Kiswahili: "ME", Mathematics: "AE", "Integrated Science": "AE", "Social Studies": "ME" }, "Term 2 2026 End-term", -90),
   );
+  // A short quiz marked out of 20, so families see marks as well as levels.
+  const quiz = "Maths & Science CAT 2";
+  db.exams.push({ name: quiz, type: "quiz", outOf: 20, updatedAt: iso(-20) });
+  for (const [sid, maths, science] of [["u-student1", 16, 12], ["u-student2", 9, 13]] as const) {
+    for (const [area, score] of [["Mathematics", maths], ["Integrated Science", science]] as const) {
+      db.results.push({ id: `r-cat-${sid}-${area.length}`, studentId: sid, exam: quiz, area, level: levelFromPercent((score / 20) * 100), score, updatedAt: iso(-20), updatedBy: "u-teacher1" });
+    }
+  }
   db.fees.push(
       ...[["u-student1", "f-t1"], ["u-student2", "f-t2"]].flatMap(([sid, p]) => [
         { ...demoFee(`${p}-c`, sid, "charge", 14000, iso(-200), null), term: "Term 2 2026" },
@@ -213,6 +224,8 @@ export function seedDatabase(): Database {
     aiSettings: { familyModel: "economy" },
     security: { requireTwoStep: false, idleMinutes: 30 },
     activity: [],
+    exams: [],
+    aiBudget: defaultAiBudget(),
   };
 }
 
