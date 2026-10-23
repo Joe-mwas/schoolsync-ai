@@ -2,6 +2,7 @@ import BrandMark from "@/components/BrandMark";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import ChatBuddy from "@/components/ChatBuddy";
 import IdleGuard from "@/components/IdleGuard";
+import NotificationBell from "@/components/NotificationBell";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import TwoStepCard from "@/components/TwoStepCard";
@@ -50,6 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="sidebar-inner">
           <div className="brand">
             <BrandMark /> SchoolSync
+            <NotificationBell />
           </div>
           {(profile.logo || profile.name) && (
             <div className="school-badge">

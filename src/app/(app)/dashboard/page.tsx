@@ -62,19 +62,24 @@ function UpcomingEvents({ db }: { db: Database }) {
   );
 }
 
+/** The school noticeboard: the latest announcements and posters this person is meant to see, new ones marked. */
 function RecentAnnouncements({ user, db, limit = 3 }: { user: User; db: Database; limit?: number }) {
   const names = new Map(db.users.map((u) => [u.id, u.name]));
   const classes = new Map(db.classes.map((c) => [c.id, c.name]));
+  const posters = new Map(db.posters.map((p) => [p.id, p]));
   const list = visibleAnnouncements(user, db).slice(0, limit);
+  const seen = user.notificationsSeenAt ?? "";
   return (
-    <div className="stack">
+    <div className="stack noticeboard" id="noticeboard">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>Latest announcements</h2>
+        <h2>📌 School noticeboard</h2>
         <Link href="/announcements" className="small">View all →</Link>
       </div>
       {list.length === 0 && <p className="muted">Nothing new.</p>}
       {list.map((a) => (
-        <AnnouncementCard key={a.id} a={a} authorName={names.get(a.authorId) ?? "Unknown"} className={a.classId ? classes.get(a.classId) ?? null : null} />
+        <div key={a.id} className={a.createdAt > seen && a.authorId !== user.id ? "is-new" : undefined}>
+          <AnnouncementCard a={a} authorName={names.get(a.authorId) ?? "Unknown"} className={a.classId ? classes.get(a.classId) ?? null : null} poster={a.posterId ? posters.get(a.posterId) ?? null : null} />
+        </div>
       ))}
     </div>
   );

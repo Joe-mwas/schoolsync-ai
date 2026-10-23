@@ -1,3 +1,4 @@
+import { alertAnnouncement } from "@/lib/alerts";
 import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { broadcastAnnouncement } from "@/lib/broadcast";
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
       whatsappSentAt: null,
     };
     await mutateDb((d) => void d.announcements.push(announcement));
+    // Phones and browsers that turned on notifications hear about it straight away.
+    void alertAnnouncement(announcement);
 
     const whatsapp = input.sendWhatsApp ? await broadcastAnnouncement(announcement.id) : null;
     await logActivity(req, user, "messages", "Posted an announcement", `${title}${input.sendWhatsApp ? " · sent on WhatsApp" : ""}`);

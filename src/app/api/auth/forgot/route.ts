@@ -1,3 +1,4 @@
+import { alertPasswordHelp } from "@/lib/alerts";
 import { schoolName } from "@/lib/ai";
 import { mutateDb, readDb } from "@/lib/db";
 import { errorResponse } from "@/lib/auth";
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
     const { request, isNew } = await mutateDb((db) => requestPasswordHelp(db, input));
     limiter.recordFailure(ip, account);
     if (isNew) {
+      void alertPasswordHelp(request);
       const db = await readDb();
       const text = passwordHelpMessage(db, request, schoolName());
       for (const admin of db.users.filter((u) => u.role === "admin")) {

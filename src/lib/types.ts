@@ -69,6 +69,8 @@ export interface User {
   morningBriefDate?: string | null;
   /** Staff: two-step sign-in with an authenticator app. */
   twoStep?: TwoStep | null;
+  /** When they last opened their notifications (the bell); newer items count as unread. */
+  notificationsSeenAt?: string | null;
   /** A two-step key shown during setup, kept until the first code confirms it. */
   twoStepPending?: { secret: string; createdAt: string } | null;
 }
@@ -294,6 +296,8 @@ export interface Database {
   aiBudget: AiBudget;
   /** Who did what, newest last (capped). */
   activity: ActivityEntry[];
+  /** Phone and browser notifications (web push). */
+  push: PushState;
   /** Fingerprint of the last emergency admin reset applied (ADMIN_RESET_PASSWORD), so each is applied once. */
   adminResetMark?: string;
 }
@@ -318,6 +322,20 @@ export interface AiBudget {
   alerts: { month: string; warned: boolean; reached: boolean };
   /** When Claude last refused for lack of credit; cleared by the next answer. */
   creditsOutAt: string | null;
+}
+
+/** One browser or phone that agreed to receive notifications. */
+export interface PushSubscriptionRecord {
+  userId: string;
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  createdAt: string;
+}
+
+export interface PushState {
+  /** This server's VAPID keys, made on first use (the private key never leaves the server). */
+  vapid: { publicKey: string; privateKey: string } | null;
+  subscriptions: PushSubscriptionRecord[];
 }
 
 /** Choices for signing staff out after a while without activity, in minutes. */

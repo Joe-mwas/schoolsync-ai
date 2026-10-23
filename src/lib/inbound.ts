@@ -1,3 +1,4 @@
+import { alertWhatsAppWaiting } from "./alerts.ts";
 import { briefData, generateReply, writeBrief } from "./ai.ts";
 import { aiRunning } from "./aiBudget.ts";
 import { logAiExchange } from "./aiLog.ts";
@@ -76,6 +77,8 @@ export async function handleInboundMessage(from: string, text: string): Promise<
   await mutateDb((d) => void d.whatsappMessages.push(inbound));
 
   const replies = user ? await replyFor(user, text) : [{ text: UNKNOWN_SENDER_REPLY }];
+  // Not answered by the menu or the AI: tell the office a message is waiting.
+  if (!user || replies.some((r) => r.text.startsWith(NO_AI_REPLY))) void alertWhatsAppWaiting(user?.name ?? phone);
 
   let last: WhatsAppMessage | null = null;
   for (const { text: body, picture } of replies) {

@@ -48,6 +48,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     activity: [],
     exams: [],
     aiBudget: defaultAiBudget(),
+    push: { vapid: null, subscriptions: [] },
   };
 }
 
@@ -226,6 +227,7 @@ export function seedDatabase(): Database {
     activity: [],
     exams: [],
     aiBudget: defaultAiBudget(),
+    push: { vapid: null, subscriptions: [] },
   };
 }
 
