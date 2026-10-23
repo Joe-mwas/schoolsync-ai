@@ -222,11 +222,13 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
   --sc-hill-far: #b9dcc1; --sc-hill-far-2: #a6d2b2; --sc-hill-mid: #8cc98d; --sc-hill-mid-2: #74b978; --sc-hill-near: #6fb56f; --sc-hill-near-2: #5ea660;
   --sc-trunk: #7a5a3a; --sc-leaf: #4f9d58; --sc-leaf-2: #5cae63; --sc-wall: #f6f1e8; --sc-wall-2: #e3dbcd; --sc-roof: #c0392b; --sc-door: #7a4b2a;
   --sc-window: #9fd3f5; --sc-window-lit: 0; --sc-step: #d9cfbf; --sc-path: #e9dcc3; --sc-road: #5d6573; --sc-road-2: #4a515e; --sc-busglass: #cfeaff;
+  --sc-home: #fbf6ee; --sc-sync: #ffffff; --sc-sync-dot: #2952cc;
   --sc-night: 0; --sc-day: 1; --sc-tagline: #1b2a4a; background: var(--sc-sky-top); }
 :root[data-theme="dark"] .auth-art { --sc-sky-top: #0a1230; --sc-sky-mid: #1b2753; --sc-sky-low: #3a3c6c; --sc-sun: #ffd98a; --sc-cloud: #4a5582;
   --sc-hill-far: #2a3a5c; --sc-hill-far-2: #24324f; --sc-hill-mid: #22394a; --sc-hill-mid-2: #1d3140; --sc-hill-near: #1d3a35; --sc-hill-near-2: #18302c;
   --sc-trunk: #3b2c22; --sc-leaf: #1f4a35; --sc-leaf-2: #24563d; --sc-wall: #b9b3aa; --sc-wall-2: #8f8a83; --sc-roof: #7d2a22; --sc-door: #4a2e1c;
   --sc-window: #3a4a6a; --sc-window-lit: 0.9; --sc-step: #6e6a63; --sc-path: #6b6458; --sc-road: #2c313b; --sc-road-2: #23272f; --sc-busglass: #8fb7d6;
+  --sc-home: #a39d94; --sc-sync: #ffd77a; --sc-sync-dot: #ffd166;
   --sc-night: 1; --sc-day: 0; --sc-tagline: #eef1fb; }
 .auth-tagline { color: var(--sc-tagline); }
 .scene-night { opacity: var(--sc-night); transition: opacity 0.8s ease; }
@@ -302,8 +304,48 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 @keyframes scene-puff { 0% { opacity: 0.55; translate: 0 0; scale: 0.6; } 100% { opacity: 0; translate: -18px -8px; scale: 1.8; } }
 @keyframes scene-spin { to { rotate: 360deg; } }
 
+/* SchoolSync: dotted lines between the school and the homes, with messages travelling along them (SVG animateMotion) */
+.scene-sync-line { fill: none; stroke: var(--sc-sync); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 9; opacity: 0.75; animation: scene-march 1.6s linear infinite; }
+@keyframes scene-march { to { stroke-dashoffset: -22; } }
+.scene-sync-dot { fill: var(--sc-sync-dot); stroke: #fff; stroke-width: 2; opacity: 0; }
+.scene-sync-dot.is-reply { fill: #ffd166; }
+:root[data-theme="dark"] .scene-sync-dot { stroke: #fff7c8; }
+.scene-sync-ping { fill: none; stroke: var(--sc-sync); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: scene-ping 2.4s var(--ease-out) infinite; }
+@keyframes scene-ping { from { scale: 0.4; opacity: 0.9; } to { scale: 3.2; opacity: 0; } }
+
+/* The SchoolSync logo and name. On sign-in the cap pops in, the sync arrows draw round it and then turn every few
+   seconds, and "School" and "Sync" glide in from either side and meet. */
+.wordmark { display: inline-flex; font-weight: 700; letter-spacing: -0.01em; }
+.wm-sync { color: var(--primary); }
+.brand-mark-svg .sync-arrows { transform-box: view-box; transform-origin: 50% 50%; }
+.brand:hover .brand-mark-svg:not(.is-animated) .sync-arrows { animation: sync-turn-once 0.9s var(--ease-out); }
+@keyframes sync-turn-once { to { rotate: 360deg; } }
+.brand-mark-svg.is-animated { overflow: visible; }
+.is-animated .sync-cap { transform-box: view-box; transform-origin: 50% 50%; animation: sync-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
+@keyframes sync-pop { from { scale: 0.3; opacity: 0; } to { scale: 1; opacity: 1; } }
+.is-animated .sync-arc { stroke-dasharray: 1; animation: sync-draw 0.8s var(--ease-out) 0.35s both; }
+@keyframes sync-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.is-animated .sync-head { animation: sync-fade 0.3s ease 1s both; }
+@keyframes sync-fade { from { opacity: 0; } to { opacity: 1; } }
+.is-animated .sync-arrows { animation: sync-turn 6s var(--ease-io) 1.3s infinite; }
+@keyframes sync-turn { 0% { rotate: 0deg; } 22%, 100% { rotate: 360deg; } }
+.wordmark.is-animated { overflow: hidden; padding: 0 2px; margin: 0 -2px; }
+.wordmark.is-animated .wm-school { animation: wm-from-left 0.8s var(--ease-out) 0.25s both; }
+.wordmark.is-animated .wm-sync {
+  color: transparent; background: linear-gradient(110deg, var(--primary) 0 40%, var(--wm-shine) 50%, var(--primary) 60%) 100% 0 / 300% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  animation: wm-from-right 0.8s var(--ease-out) 0.25s both, wm-shine 6s var(--ease-io) 1.3s infinite;
+}
+.wordmark { --wm-shine: #9cc2ff; }
+:root[data-theme="dark"] .wordmark { --wm-shine: #ffffff; }
+@keyframes wm-from-left { from { opacity: 0; translate: -0.9em 0; filter: blur(4px); } to { opacity: 1; translate: 0 0; filter: blur(0); } }
+@keyframes wm-from-right { from { opacity: 0; translate: 0.9em 0; filter: blur(4px); } to { opacity: 1; translate: 0 0; filter: blur(0); } }
+@keyframes wm-shine { 0% { background-position: 100% 0; } 22%, 100% { background-position: 0% 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .auth-art *, .auth-art .scene * { animation: none !important; transition: none !important; }
+  .auth-art *, .auth-art .scene *, .brand-mark-svg *, .wordmark * { animation: none !important; transition: none !important; }
+  .scene-sync-dot { display: none; }
+  .wordmark.is-animated .wm-sync { color: var(--primary); background: none; }
   .scene-walker { transform: translateX(340px); }
   .scene-bus { transform: translateX(470px); }
   .scene-exhaust circle { opacity: 0; }

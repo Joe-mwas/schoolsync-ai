@@ -1,4 +1,4 @@
-import BrandMark from "@/components/BrandMark";
+import BrandMark, { Wordmark } from "@/components/BrandMark";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import ChatBuddy from "@/components/ChatBuddy";
 import IdleGuard from "@/components/IdleGuard";
@@ -57,7 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="brand">
-            <BrandMark /> <span className="brand-name">SchoolSync</span>
+            <BrandMark /> <Wordmark />
             <NotificationBell />
           </div>
           {(profile.logo || profile.name) && (

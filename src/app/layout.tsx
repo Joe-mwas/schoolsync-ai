@@ -4,7 +4,7 @@ import "./globals.css";
 import { currentTheme } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "SchoolSync AI",
+  title: "SchoolSync",
   description: "AI-powered school communication: announcements, WhatsApp, posters and role-based dashboards.",
 };
 
