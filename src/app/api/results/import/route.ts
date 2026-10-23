@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, readDb } from "@/lib/db";
 import { importResults } from "@/lib/results";
@@ -14,6 +15,7 @@ export async function POST(req: Request) {
     const report = dryRun
       ? importResults(structuredClone(await readDb()), user, csv, exam)
       : await mutateDb((db) => importResults(db, user, csv, exam));
+    if (!dryRun) await logActivity(req, user, "results", "Imported results from a file", `${exam.trim()}: ${report.saved} saved${report.errors ? `, ${report.errors} rows with problems` : ""}`);
     return Response.json(report);
   } catch (err) {
     return errorResponse(err);

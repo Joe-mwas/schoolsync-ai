@@ -1,4 +1,6 @@
+import { logActivity } from "@/lib/activity";
 import { setSessionCookie } from "@/lib/auth";
+import { createTicket } from "@/lib/session";
 import { readDb } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { phoneKey } from "@/lib/phone";
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
   const user = findBySignInName(db, email);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     loginLimiter.recordFailure(ip, account);
+    await logActivity(req, user ?? null, "signin", "Failed sign-in", user ? "Wrong password" : "No account with that email or phone", "Unknown");
     return Response.json({ error: "Incorrect sign-in details" }, { status: 401 });
   }
   loginLimiter.recordSuccess(ip, account);
@@ -41,6 +44,11 @@ export async function POST(req: Request) {
       { status: 403 },
     );
   }
+  // With two-step sign-in, the password only earns a short ticket; the code finishes it.
+  if (user.twoStep) {
+    return Response.json({ twoStep: true, ticket: createTicket(user.id, user.sessionVersion ?? 0) });
+  }
   await setSessionCookie(user);
+  await logActivity(req, user, "signin", "Signed in");
   return Response.json({ ok: true });
 }

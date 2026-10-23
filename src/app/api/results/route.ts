@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { SUGGESTED_AREAS } from "@/lib/cbc";
 import { mutateDb, readDb } from "@/lib/db";
@@ -45,8 +46,10 @@ export async function PUT(req: Request) {
     const user = await requireApiUser(STAFF);
     const { classId, exam, rows } = (await req.json().catch(() => ({}))) as { classId?: string; exam?: string; rows?: GridRow[] };
     if (!Array.isArray(rows)) throw new HttpError(400, "Nothing to save");
-    const result = await mutateDb((db) => saveResults(db, user, classId ?? "", exam ?? "", rows));
-    return Response.json(result);
+    const result = await mutateDb((db) => ({ ...saveResults(db, user, classId ?? "", exam ?? "", rows), className: db.classes.find((c) => c.id === classId)?.name ?? "" }));
+    await logActivity(req, user, "results", "Saved results", `${result.className}, ${String(exam).trim()}: ${result.saved} learners`);
+    const { className: _name, ...saved } = result;
+    return Response.json(saved);
   } catch (err) {
     return errorResponse(err);
   }

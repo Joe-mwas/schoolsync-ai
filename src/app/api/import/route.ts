@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb, newId, readDb, snapshotDb } from "@/lib/db";
 import { runImport } from "@/lib/importer";
@@ -13,7 +14,7 @@ const MAX_CSV_CHARS = 1_000_000;
  */
 export async function POST(req: Request) {
   try {
-    await requireApiUser(PEOPLE_MANAGERS);
+    const user = await requireApiUser(PEOPLE_MANAGERS);
     const { csv, dryRun } = (await req.json().catch(() => ({}))) as { csv?: string; dryRun?: boolean };
     if (typeof csv !== "string" || !csv.trim()) throw new HttpError(400, "Choose a CSV file to import");
     if (csv.length > MAX_CSV_CHARS) throw new HttpError(400, "That file is too large; split it into smaller files");
@@ -49,6 +50,8 @@ export async function POST(req: Request) {
         },
       }),
     );
+    const n = report.summary;
+    await logActivity(req, user, "people", "Imported learners from a file", `${n.newStudents} new learners, ${n.newParents} new parents, ${n.newClasses} new classes${n.errors ? `, ${n.errors} rows with problems` : ""}`);
     return Response.json(report, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     return errorResponse(err);

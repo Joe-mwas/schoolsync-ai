@@ -43,6 +43,8 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     documents: [],
     insights: {},
     aiSettings: { familyModel: "economy" },
+    security: { requireTwoStep: false, idleMinutes: 30 },
+    activity: [],
   };
 }
 
@@ -209,6 +211,8 @@ export function seedDatabase(): Database {
     documents: [],
     insights: {},
     aiSettings: { familyModel: "economy" },
+    security: { requireTwoStep: false, idleMinutes: 30 },
+    activity: [],
   };
 }
 

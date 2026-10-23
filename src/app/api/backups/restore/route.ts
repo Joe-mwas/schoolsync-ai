@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser, setSessionCookie } from "@/lib/auth";
 import { decodeBackup, readSnapshot } from "@/lib/backup";
 import { backupDirectory, replaceDb } from "@/lib/db";
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       );
     }
     await replaceDb(restored);
+    await logActivity(req, me, "data", "Restored a backup", name ?? "Uploaded file");
     // The restored account may carry an older session version; keep this browser signed in.
     await setSessionCookie(self);
     return Response.json({ ok: true, people: restored.users.length });

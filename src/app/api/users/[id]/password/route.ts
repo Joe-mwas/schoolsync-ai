@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
 import { assertCanManage, setPassword } from "@/lib/users";
@@ -10,12 +11,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
     if (id === actor.id) throw new HttpError(400, "Change your own password from My account");
     const { password } = (await req.json().catch(() => ({}))) as { password?: string };
-    await mutateDb((db) => {
+    const target = await mutateDb((db) => {
       const user = db.users.find((u) => u.id === id);
       if (!user) throw new HttpError(404, "Person not found");
       assertCanManage(actor, user);
+      const hadTwoStep = Boolean(user.twoStep);
       setPassword(user, password ?? "", { mustChange: true });
+      return { name: user.name, hadTwoStep };
     });
+    await logActivity(req, actor, "security", "Reset a password", `${target.name}${target.hadTwoStep ? " · two-step sign-in turned off" : ""}`);
     return Response.json({ ok: true });
   } catch (err) {
     return errorResponse(err);

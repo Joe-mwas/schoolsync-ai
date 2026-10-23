@@ -1,3 +1,4 @@
+import { logActivity } from "@/lib/activity";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
 import { mutateDb } from "@/lib/db";
 import { dismissRequest, resetFromRequest } from "@/lib/passwordHelp";
@@ -11,6 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { action } = (await req.json().catch(() => ({}))) as { action?: unknown };
     if (action === "reset") {
       const { password, user } = await mutateDb((db) => resetFromRequest(db, admin, id));
+      await logActivity(req, admin, "security", "Reset a password", `${user.name} (asked for help signing in)`);
       return Response.json({ password, name: user.name, signInWith: user.email || user.phone || "" });
     }
     if (action === "dismiss") {

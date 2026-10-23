@@ -153,3 +153,48 @@ export function FamilyModelPicker({ initial }: { initial: "economy" | "balanced"
     </fieldset>
   );
 }
+
+/** Sign-in security for staff: require two-step sign-in, and the auto sign-out time. */
+export function SignInSecurityForm({ initial, adminHasTwoStep }: { initial: { requireTwoStep: boolean; idleMinutes: number }; adminHasTwoStep: boolean }) {
+  const [settings, setSettings] = useState(initial);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  async function save(next: typeof settings) {
+    const before = settings;
+    setSettings(next);
+    setMsg(null);
+    const res = await fetch("/api/security-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) }).catch(() => null);
+    const data = await res?.json().catch(() => ({}));
+    if (res?.ok) setMsg({ ok: true, text: "Saved." });
+    else {
+      setSettings(before);
+      setMsg({ ok: false, text: data?.error ?? "Couldn't save; try again." });
+    }
+  }
+  return (
+    <div className="stack" style={{ gap: 12 }}>
+      <label className="row" style={{ gap: 10, alignItems: "flex-start", flexWrap: "nowrap", fontWeight: 400 }}>
+        <input
+          type="checkbox"
+          id="require-two-step"
+          style={{ width: "auto", marginTop: 4 }}
+          checked={settings.requireTwoStep}
+          onChange={(e) => save({ ...settings, requireTwoStep: e.target.checked })}
+        />
+        <span>
+          <strong>Require two-step sign-in for all staff</strong>
+          <span className="small muted" style={{ display: "block" }}>
+            Staff without it are asked to set it up (about a minute, with a free authenticator app) the next time they open the system.
+            {!adminHasTwoStep && " Turn it on for your own account first, in My account."}
+          </span>
+        </span>
+      </label>
+      <label style={{ maxWidth: 320 }}>
+        Sign staff out automatically after no activity for
+        <select id="idle-minutes" value={settings.idleMinutes} onChange={(e) => save({ ...settings, idleMinutes: Number(e.target.value) })}>
+          {[15, 30, 60, 120].map((m) => <option key={m} value={m}>{m < 60 ? `${m} minutes` : `${m / 60} hour${m === 60 ? "" : "s"}`}</option>)}
+        </select>
+      </label>
+      {msg && <div className="small" role="status" style={{ color: msg.ok ? "var(--accent)" : "var(--danger)" }}>{msg.ok ? "✓ " : ""}{msg.text}</div>}
+    </div>
+  );
+}

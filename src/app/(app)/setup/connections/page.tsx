@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
-import { requireUser } from "@/lib/auth";
+import { isStaff, requireUser } from "@/lib/auth";
+import Link from "next/link";
 import { listSnapshots } from "@/lib/backup";
 import { backupDirectory, readDb } from "@/lib/db";
 import { callbackUrls, mpesaReceiving } from "@/lib/daraja";
@@ -8,7 +9,7 @@ import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "
 import { webhookActivity } from "@/lib/webhookActivity";
 import { encryptionConfigured } from "@/lib/dataCrypto";
 import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
-import { CopyButton, FamilyModelPicker, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
+import { CopyButton, FamilyModelPicker, SignInSecurityForm, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
 import SetupTabs from "../SetupTabs";
 
 const PILL: Record<ItemStatus, { label: string; className: string }> = {
@@ -41,6 +42,9 @@ function Checklist({ section }: { section: SetupSection }) {
 
 export default async function ConnectionsPage() {
   const me = await requireUser(["admin"]);
+  const db = await readDb();
+  const staff = db.users.filter(isStaff);
+  const staffWithTwoStep = staff.filter((u) => u.twoStep).length;
   const snapshots = await listSnapshots(backupDirectory());
   const sections = setupChecklist(process.env, { lastBackupAt: snapshots[0]?.createdAt ?? null });
   const { ready, total } = countReady(sections);
@@ -115,12 +119,24 @@ export default async function ConnectionsPage() {
         {offsite && encrypted && <OffsiteBackupButton />}
       </div>
 
+      <div className="card stack" id="sign-in">
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0 }}>Sign-in security</h2>
+          <Link href="/activity" className="small">Open the activity log →</Link>
+        </div>
+        <p className="small muted" style={{ margin: 0 }}>
+          Two-step sign-in: {staffWithTwoStep} of {staff.length} staff have it on. Parents and learners sign in as before and stay signed in on their phones.
+          If someone loses their phone, reset their password in School Admin; that also turns off their two-step sign-in so they can set it up again.
+        </p>
+        <SignInSecurityForm initial={db.security} adminHasTwoStep={Boolean(me.twoStep)} />
+      </div>
+
       <div className="card stack">
         <h2>{ai.title}</h2>
         <p className="small muted">Powers the AI Assistant, &quot;Draft with AI&quot; on announcements, and automatic WhatsApp replies.</p>
         <Checklist section={ai} />
         <TestButton kind="ai" label="Test AI" />
-        <FamilyModelPicker initial={(await readDb()).aiSettings.familyModel} />
+        <FamilyModelPicker initial={db.aiSettings.familyModel} />
       </div>
 
       <div className="card stack">

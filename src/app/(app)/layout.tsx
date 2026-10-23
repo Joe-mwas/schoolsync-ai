@@ -1,11 +1,13 @@
 import BrandMark from "@/components/BrandMark";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import ChatBuddy from "@/components/ChatBuddy";
+import IdleGuard from "@/components/IdleGuard";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
+import TwoStepCard from "@/components/TwoStepCard";
 import { currentTheme } from "@/lib/theme";
 import { schoolName } from "@/lib/ai";
-import { requireUser } from "@/lib/auth";
+import { isStaff, needsTwoStepSetup, requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { ASSIGNMENT_SETTERS, DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS, POSTER_MAKERS, SCHOOL_WIDE, STAFF, WHATSAPP_INBOX, type Role } from "@/lib/types";
@@ -29,6 +31,7 @@ const NAV: (NavItem & { roles?: Role[] })[] = [
   { href: "/admin-ai", label: "Admin AI", roles: ["admin"] },
   { href: "/school-ai", label: "School AI", roles: ["headteacher"] },
   { href: "/ai-review", label: "AI Review", roles: ["admin"] },
+  { href: "/activity", label: "Activity log", roles: ["admin"] },
   { href: "/setup", label: "Setup", roles: ["admin"] },
   { href: "/account", label: "My account" },
 ];
@@ -37,7 +40,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const { profile } = await readDb();
+  const db = await readDb();
+  const { profile } = db;
+  const setupTwoStep = !user.mustChangePassword && needsTwoStepSetup(user, db);
   const items = NAV.filter((n) => !n.roles || n.roles.includes(user.role)).map(({ href, label }) => ({ href, label }));
   return (
     <div className="shell">
@@ -65,11 +70,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div style={{ maxWidth: 560 }}>
             <ChangePasswordForm required />
           </div>
+        ) : setupTwoStep ? (
+          <div style={{ maxWidth: 620 }}>
+            <TwoStepCard enabled={false} required forced />
+          </div>
         ) : (
           children
         )}
       </main>
-      {user.role === "admin" && !user.mustChangePassword && <ChatBuddy name={user.name} />}
+      {user.role === "admin" && !user.mustChangePassword && !setupTwoStep && <ChatBuddy name={user.name} />}
+      {isStaff(user) && <IdleGuard minutes={db.security.idleMinutes} />}
     </div>
   );
 }

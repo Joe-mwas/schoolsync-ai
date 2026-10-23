@@ -18,6 +18,12 @@ export function setPassword(user: User, password: string, opts: { mustChange: bo
   user.passwordHash = hashPassword(validateNewPassword(password));
   user.mustChangePassword = opts.mustChange;
   user.sessionVersion = (user.sessionVersion ?? 0) + 1;
+  // A reset by the school (forgotten password, lost phone) also clears two-step
+  // sign-in; the person sets it up again, and must if the school requires it.
+  if (opts.mustChange) {
+    user.twoStep = null;
+    user.twoStepPending = null;
+  }
 }
 
 /** Staff sign in with email; parents and students may use a phone number instead. */
