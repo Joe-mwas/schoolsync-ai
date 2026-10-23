@@ -252,6 +252,23 @@ export interface Database {
   /** The school's own details and logo, filled in during onboarding (Setup). */
   profile: SchoolProfile;
   documents: SchoolDocument[];
+  /** The latest AI insights for each dashboard view, reused until the figures change. */
+  insights: Partial<Record<InsightScope, SavedInsights>>;
+}
+
+/** Which figures a dashboard shows: all (director, administrator), performance (headteacher), money (secretary). */
+export type InsightScope = "all" | "performance" | "money";
+
+export interface Insights {
+  goingWell: string[];
+  needsAttention: string[];
+  nextSteps: string[];
+}
+
+export interface SavedInsights extends Insights {
+  /** A fingerprint of the figures the AI read, so a change in the figures makes them stale. */
+  factsKey: string;
+  generatedAt: string;
 }
 
 export interface SchoolProfile {

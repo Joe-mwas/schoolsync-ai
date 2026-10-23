@@ -1,5 +1,7 @@
 import Link from "next/link";
 import CountUp from "@/components/CountUp";
+import InsightsCard from "@/components/InsightsCard";
+import { insightFacts, insightScope, insightsFresh } from "@/lib/insights";
 import AnnouncementCard, { formatDate } from "@/components/AnnouncementCard";
 import { aiConfigured } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
@@ -105,6 +107,13 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         {...(user.role !== "secretary" ? { trend: performanceTrend(db), levels: classLevels(db) } : {})}
         {...(user.role !== "headteacher" ? { months: monthlyCollections(db), byClass: feesByClass(db) } : {})}
       />
+      {(() => {
+        const scope = insightScope(user.role);
+        const facts = scope ? insightFacts(db, scope) : "";
+        if (!scope || !facts) return null;
+        const saved = db.insights[scope] ?? null;
+        return <InsightsCard initial={saved} stale={!insightsFresh(saved ?? undefined, facts)} aiReady={aiConfigured()} />;
+      })()}
       <BriefCard />
       {user.role === "admin" && (
         <Link href="/ai-review?show=unreviewed" className="card row" style={{ justifyContent: "space-between", color: "inherit" }}>

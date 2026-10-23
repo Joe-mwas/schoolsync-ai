@@ -41,6 +41,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     passwordHelp: [],
     profile: emptyProfile(),
     documents: [],
+    insights: {},
   };
 }
 
@@ -205,6 +206,7 @@ export function seedDatabase(): Database {
     passwordHelp: [],
     profile: emptyProfile(),
     documents: [],
+    insights: {},
   };
 }
 
