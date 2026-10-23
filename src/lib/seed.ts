@@ -1,5 +1,5 @@
 import { levelFromPercent } from "./cbc.ts";
-import { emptyProfile } from "./migrate.ts";
+import { defaultAiBudget, emptyProfile } from "./migrate.ts";
 import { hashPassword } from "./password.ts";
 import type { Database } from "./types.ts";
 
@@ -47,6 +47,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     security: { requireTwoStep: false, idleMinutes: 30 },
     activity: [],
     exams: [],
+    aiBudget: defaultAiBudget(),
   };
 }
 
@@ -224,6 +225,7 @@ export function seedDatabase(): Database {
     security: { requireTwoStep: false, idleMinutes: 30 },
     activity: [],
     exams: [],
+    aiBudget: defaultAiBudget(),
   };
 }
 

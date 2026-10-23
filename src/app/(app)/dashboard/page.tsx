@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { budgetState } from "@/lib/aiBudget";
 import CountUp from "@/components/CountUp";
 import InsightsCard from "@/components/InsightsCard";
 import { insightFacts, insightScope, insightsFresh } from "@/lib/insights";
@@ -124,6 +125,23 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
           <span className="stat-value" style={{ fontSize: "1.4rem" }}>{db.aiLogs.filter((l) => !l.reviewedAt).length} →</span>
         </Link>
       )}
+      {user.role === "admin" && aiConfigured() && (() => {
+        const b = budgetState(db.aiBudget);
+        const text = b.paused === "off"
+          ? "The AI is switched off (manual mode). Parents still get fees and results from the WhatsApp menu; other questions wait in the WhatsApp inbox."
+          : b.paused === "limit"
+            ? `The AI reached this month's budget (KSh ${(b.limitKsh ?? 0).toLocaleString("en-KE")}) and is paused until next month. The system is in manual mode.`
+            : b.creditsOutAt
+              ? "Claude says the AI credit has run out, so the system is in manual mode. Add credit in the Claude Console → Billing."
+              : b.share !== null && b.share >= 0.8
+                ? `The AI has used ${Math.round(b.share * 100)}% of this month's budget (KSh ${b.spentKsh.toLocaleString("en-KE")} of ${(b.limitKsh ?? 0).toLocaleString("en-KE")}).`
+                : null;
+        return text ? (
+          <div className="notice">
+            {text} <Link href="/setup/connections#ai-budget">AI budget →</Link>
+          </div>
+        ) : null;
+      })()}
       {user.role === "admin" && (!aiConfigured() || !whatsappConfigured()) && (
         <div className="notice">
           {!aiConfigured() && <div>AI assistant is off — set <code>ANTHROPIC_API_KEY</code> to enable it.</div>}

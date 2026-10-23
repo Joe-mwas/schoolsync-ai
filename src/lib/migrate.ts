@@ -1,6 +1,8 @@
-import { IDLE_CHOICES, type Database, type SchoolProfile, type SecuritySettings } from "./types.ts";
+import { IDLE_CHOICES, type AiBudget, type Database, type SchoolProfile, type SecuritySettings } from "./types.ts";
 
 export const emptyProfile = (): SchoolProfile => ({ name: "", motto: "", website: "", phone: "", email: "", address: "", logo: null, updatedAt: null });
+
+export const defaultAiBudget = (): AiBudget => ({ monthlyLimitKsh: null, off: false, months: {}, alerts: { month: "", warned: false, reached: false }, creditsOutAt: null });
 
 export const defaultSecurity = (): SecuritySettings => ({ requireTwoStep: false, idleMinutes: 30 });
 
@@ -25,6 +27,10 @@ export function migrateDatabase(db: Database, env: Record<string, string | undef
     changed = true;
   } else if (!(IDLE_CHOICES as readonly number[]).includes(db.security.idleMinutes) || typeof db.security.requireTwoStep !== "boolean") {
     db.security = { requireTwoStep: db.security.requireTwoStep === true, idleMinutes: (IDLE_CHOICES as readonly number[]).includes(db.security.idleMinutes) ? db.security.idleMinutes : 30 };
+    changed = true;
+  }
+  if (!db.aiBudget || typeof db.aiBudget !== "object" || typeof db.aiBudget.months !== "object") {
+    db.aiBudget = defaultAiBudget();
     changed = true;
   }
   if (!db.insights || typeof db.insights !== "object" || Array.isArray(db.insights)) {

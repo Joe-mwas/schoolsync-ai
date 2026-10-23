@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { FALLBACK_BETA, getClient, MODEL, schoolName } from "../ai.ts";
+import { askClaude, FALLBACK_BETA, MODEL, schoolName } from "../ai.ts";
 import { listSnapshots } from "../backup.ts";
 import { backupDirectory, mutateDb, readDb } from "../db.ts";
 import { HttpError } from "../errors.ts";
@@ -167,7 +167,7 @@ export async function runAdminTurn(user: User, history: ChatTurn[], opts: { fast
   ];
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const response = await getClient().beta.messages.create({
+    const response = await askClaude(profile === "admin" ? (opts.fast ? "chat-buddy" : "admin-ai") : "school-ai", {
       model: MODEL,
       max_tokens: 16000,
       betas: [FALLBACK_BETA],

@@ -149,7 +149,7 @@ export interface WhatsAppMessage {
   /** For a picture: the school fact whose picture was sent (the body is its caption). */
   factId?: string | null;
   /** Why the school sent it, for messages the school starts. */
-  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | "password-help" | null;
+  purpose?: "fee-reminder" | "receipt" | "morning-brief" | "forwarded-question" | "duty" | "password-help" | "ai-budget" | null;
   /** Meta's message id (wamid), used to match delivery receipts. */
   providerMessageId?: string | null;
 }
@@ -291,8 +291,31 @@ export interface Database {
   insights: Partial<Record<InsightScope, SavedInsights>>;
   aiSettings: AiSettings;
   security: SecuritySettings;
+  aiBudget: AiBudget;
   /** Who did what, newest last (capped). */
   activity: ActivityEntry[];
+}
+
+/** A month's AI spending, from the token counts Claude reports. */
+export interface AiMonth {
+  usd: number;
+  calls: number;
+  /** Spending per feature (WhatsApp, assistant, brief…), in US dollars. */
+  byFeature: Record<string, number>;
+}
+
+/** The school's AI budget: a monthly limit, a manual off switch, and what's been spent. */
+export interface AiBudget {
+  /** Pause the AI once this month's spending reaches this many shillings; null = no limit. */
+  monthlyLimitKsh: number | null;
+  /** The administrator switched the AI off (manual mode). */
+  off: boolean;
+  /** "YYYY-MM" (Nairobi) → spending; the last 12 months are kept. */
+  months: Record<string, AiMonth>;
+  /** Alerts already sent this month, so each goes once. */
+  alerts: { month: string; warned: boolean; reached: boolean };
+  /** When Claude last refused for lack of credit; cleared by the next answer. */
+  creditsOutAt: string | null;
 }
 
 /** Choices for signing staff out after a while without activity, in minutes. */

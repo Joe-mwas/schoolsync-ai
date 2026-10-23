@@ -172,11 +172,11 @@ export function SignInSecurityForm({ initial, adminHasTwoStep }: { initial: { re
   }
   return (
     <div className="stack" style={{ gap: 12 }}>
-      <label className="row" style={{ gap: 10, alignItems: "flex-start", flexWrap: "nowrap", fontWeight: 400 }}>
+      <label className="check-row">
         <input
           type="checkbox"
           id="require-two-step"
-          style={{ width: "auto", marginTop: 4 }}
+          
           checked={settings.requireTwoStep}
           onChange={(e) => save({ ...settings, requireTwoStep: e.target.checked })}
         />
@@ -194,6 +194,90 @@ export function SignInSecurityForm({ initial, adminHasTwoStep }: { initial: { re
           {[15, 30, 60, 120].map((m) => <option key={m} value={m}>{m < 60 ? `${m} minutes` : `${m / 60} hour${m === 60 ? "" : "s"}`}</option>)}
         </select>
       </label>
+      {msg && <div className="small" role="status" style={{ color: msg.ok ? "var(--accent)" : "var(--danger)" }}>{msg.ok ? "✓ " : ""}{msg.text}</div>}
+    </div>
+  );
+}
+
+export interface AiBudgetView {
+  spentKsh: number;
+  limitKsh: number | null;
+  calls: number;
+  paused: "off" | "limit" | null;
+  creditsOutAt: string | null;
+  byFeature: { label: string; ksh: number }[];
+  lastMonthKsh: number | null;
+}
+
+/** This month's AI spending, the monthly limit, and the manual-mode switch. */
+export function AiBudgetCard({ view }: { view: AiBudgetView }) {
+  const [limit, setLimit] = useState(view.limitKsh ? String(view.limitKsh) : "");
+  const [off, setOff] = useState(view.paused === "off");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  async function save(next: { limit: string; off: boolean }) {
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch("/api/ai-budget", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ monthlyLimitKsh: next.limit.trim() ? Number(next.limit) : null, off: next.off }) }).catch(() => null);
+    const data = await res?.json().catch(() => ({}));
+    setBusy(false);
+    if (res?.ok) {
+      setMsg({ ok: true, text: "Saved." });
+      window.location.reload();
+    } else setMsg({ ok: false, text: data?.error ?? "Couldn't save; try again." });
+  }
+  const pct = view.limitKsh ? Math.min(100, Math.round((view.spentKsh / view.limitKsh) * 100)) : null;
+  const ksh = (n: number) => `KSh ${n.toLocaleString("en-KE")}`;
+  return (
+    <div className="stack ai-budget" style={{ gap: 12 }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+        <strong>AI budget this month</strong>
+        <span className={`badge ${view.paused || view.creditsOutAt ? "urgent" : "ok"}`}>
+          {view.paused === "off" ? "Off · manual mode" : view.paused === "limit" ? "Paused · limit reached" : view.creditsOutAt ? "Credit ran out" : "Running"}
+        </span>
+      </div>
+      <div>
+        <span className="budget-figure">{ksh(view.spentKsh)}</span>
+        <span className="muted">{view.limitKsh ? ` of ${ksh(view.limitKsh)}` : " spent"} · {view.calls.toLocaleString("en-KE")} AI answer{view.calls === 1 ? "" : "s"}</span>
+        {view.lastMonthKsh !== null && <span className="small muted"> · last month {ksh(view.lastMonthKsh)}</span>}
+      </div>
+      {pct !== null && (
+        <div className={`meter${pct >= 100 ? " is-full" : pct >= 80 ? " is-warn" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Share of the monthly AI budget used">
+          <span style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {view.creditsOutAt && (
+        <div className="notice small">
+          Claude said the credit ran out ({new Date(view.creditsOutAt).toLocaleString("en-GB", { timeZone: "Africa/Nairobi" })}). Add credit in the Claude Console → Billing; the AI resumes by itself.
+        </div>
+      )}
+      <form className="row" style={{ gap: 8, alignItems: "flex-end" }} onSubmit={(e) => { e.preventDefault(); save({ limit, off }); }}>
+        <label style={{ flex: "0 1 220px" }}>
+          Monthly limit (KSh)
+          <input id="ai-limit" value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^\d]/g, ""))} inputMode="numeric" placeholder="No limit" />
+        </label>
+        <button type="submit" className="small" disabled={busy}>Save limit</button>
+      </form>
+      <div className="small muted">
+        You&apos;re warned on WhatsApp at 80%. At the limit the AI pauses until next month and the system carries on in manual mode:
+        the WhatsApp menu still gives fees and results, other questions wait in the WhatsApp inbox for the office, and the
+        director&apos;s brief goes out as plain figures. Costs are estimates (KSh 130 to the dollar); the Claude Console has the exact bill.
+      </div>
+      <label className="check-row">
+        <input type="checkbox" id="ai-off" checked={off} disabled={busy} onChange={(e) => { setOff(e.target.checked); save({ limit, off: e.target.checked }); }} />
+        <span>
+          <strong>Switch the AI off (manual mode)</strong>
+          <span className="small muted" style={{ display: "block" }}>Everything else keeps working; untick to turn the AI back on.</span>
+        </span>
+      </label>
+      {view.byFeature.length > 0 && (
+        <details className="small">
+          <summary>Where the money went this month</summary>
+          <ul className="list" style={{ marginTop: 6 }}>
+            {view.byFeature.map((f) => <li key={f.label} className="row" style={{ justifyContent: "space-between" }}><span>{f.label}</span><span>{ksh(f.ksh)}</span></li>)}
+          </ul>
+        </details>
+      )}
       {msg && <div className="small" role="status" style={{ color: msg.ok ? "var(--accent)" : "var(--danger)" }}>{msg.ok ? "✓ " : ""}{msg.text}</div>}
     </div>
   );

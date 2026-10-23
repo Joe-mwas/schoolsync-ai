@@ -1,3 +1,4 @@
+import { assertAiAllowed } from "@/lib/aiBudget";
 import { aiConfigured } from "@/lib/ai";
 import { runAdminTurn, type ChatTurn } from "@/lib/adminAi/agent";
 import { errorResponse, HttpError, requireApiUser } from "@/lib/auth";
@@ -10,6 +11,7 @@ export async function POST(req: Request) {
   try {
     const user = await requireApiUser(["admin", "director", "headteacher"]);
     if (!aiConfigured()) throw new HttpError(400, "Connect Claude first: set ANTHROPIC_API_KEY (see the Setup page).");
+    await assertAiAllowed();
     const { history, fast } = (await req.json().catch(() => ({}))) as { history?: ChatTurn[]; fast?: unknown };
     if (!Array.isArray(history)) throw new HttpError(400, "Ask a question first");
     const clean = history

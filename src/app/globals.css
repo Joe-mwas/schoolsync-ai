@@ -551,3 +551,8 @@ h2 { letter-spacing: -0.01em; }
 /* Wide tables scroll inside their card instead of widening the page. */
 .main, .stack > * { min-width: 0; }
 .lvl i { display: inline-block; }
+.budget-figure { font-family: var(--font-display, inherit); font-size: 1.5rem; font-weight: 700; margin-right: 4px; }
+.meter.is-warn span { background: var(--warning-text); }
+.meter.is-full span { background: var(--danger); }
+label.check-row { flex-direction: row; align-items: flex-start; gap: 10px; font-weight: 400; font-size: 0.9rem; }
+label.check-row input { width: auto; margin-top: 4px; flex: none; }

@@ -1,4 +1,5 @@
-import { aiConfigured, briefData, generateReply, writeBrief } from "./ai.ts";
+import { briefData, generateReply, writeBrief } from "./ai.ts";
+import { aiRunning } from "./aiBudget.ts";
 import { logAiExchange } from "./aiLog.ts";
 import { splitMessage } from "./brief.ts";
 import { dataFile, mutateDb, newId, readDb } from "./db.ts";
@@ -38,7 +39,8 @@ async function replyFor(user: User, text: string): Promise<Outgoing[]> {
     return splitMessage(brief).map((t) => ({ text: t }));
   }
 
-  if (!aiConfigured()) return [{ text: `${NO_AI_REPLY}\n\n${hint}` }];
+  // No AI, or paused (switched off or over budget): manual mode, the office replies from the WhatsApp inbox.
+  if (!(await aiRunning())) return [{ text: `${NO_AI_REPLY}\n\n${hint}` }];
   try {
     const raw = (await generateReply(user, db, text)) || NO_AI_REPLY;
     const { text: answer, facts } = extractPictures(db, user, raw);
