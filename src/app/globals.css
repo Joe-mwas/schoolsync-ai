@@ -1,19 +1,20 @@
-/* Light ("soft white", easy on the eyes) is the default; people can switch to dark (see ThemeToggle). */
+/* Light is the default: soft slate pages beside a deep navy menu, with no bright white (people can switch
+   to dark, see ThemeToggle). Text and charts were checked for contrast on these colours. */
 :root {
-  --bg: #e7e8e3;
-  --surface: #f1f1ec;
-  --surface-2: #e4e5df;
-  --border: #d5d7cf;
+  --bg: #d3d7de;
+  --surface: #e1e4e9;
+  --surface-2: #d2d6dd;
+  --border: #bfc5cf;
   --text: #1d2129;
-  --muted: #555c69;
+  --muted: #4d5462;
   --primary: #2952cc;
   --primary-contrast: #ffffff;
-  --accent: #0f9d76;
-  --danger: #c43d3d;
-  --warning-bg: #fff4e0;
-  --warning-text: #8a5300;
+  --accent: #086a4f;
+  --danger: #a82a2a;
+  --warning-bg: #f0e2c6;
+  --warning-text: #6f4400;
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 18px rgba(16, 24, 40, 0.07);
   --glow: rgba(41, 82, 204, 0.30);
   --glow-soft: rgba(41, 82, 204, 0.14);
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -267,8 +268,8 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 .viz {
   --viz-1: #2a78d6;
   --viz-2: #d95926;
-  --viz-grid: #dcded6;
-  --viz-axis: #c3c2b7;
+  --viz-grid: #c9ced6;
+  --viz-axis: #adb4bf;
   /* CBC levels, an ordered single-hue ramp: Exceeding (strongest) → Below. */
   --lvl-ee: #0d366b;
   --lvl-me: #1c5cab;
@@ -593,3 +594,18 @@ label.check-row input { width: auto; margin-top: 4px; flex: none; }
 .board-item.urgent { border-color: var(--danger); }
 .board-item.is-new { box-shadow: 0 0 0 2px var(--primary); }
 .new-tag { margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--primary); color: var(--primary-contrast); font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
+
+/* Premium light: the menu is deep navy (the bell's panel opens in the same style). */
+:root:not([data-theme="dark"]) .sidebar {
+  --surface: #131a2c;
+  --surface-2: #1f2840;
+  --border: #283250;
+  --text: #e9ecf4;
+  --muted: #a3abc0;
+  --primary: #9db0ff;
+  --primary-contrast: #0c1020;
+  color: var(--text);
+  background: linear-gradient(180deg, #161d33 0%, #10162a 100%);
+  border-right-color: #0d1222;
+}
+:root:not([data-theme="dark"]) .sidebar .nav a.active { background: rgba(157, 176, 255, 0.12); }
