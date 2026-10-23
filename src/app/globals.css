@@ -217,31 +217,96 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 .credit { padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); letter-spacing: 0.02em; }
 .credit strong { color: var(--primary); font-weight: 600; }
 
-/* The scene's motion. */
-.scene-leg { stroke: #26324d; stroke-width: 6; stroke-linecap: round; }
-.scene-arm { stroke: #6b4a32; stroke-width: 4.5; stroke-linecap: round; }
-.scene-leg, .scene-arm, .scene-wheel, .scene-flag { transform-box: fill-box; }
-.scene-leg, .scene-arm { transform-origin: 50% 0%; animation: scene-swing 0.9s ease-in-out infinite alternate; }
+/* The sign-in scene. Colours are variables so Dark mode can turn it into night. */
+.auth-art { --sc-sky-top: #8fc4f2; --sc-sky-mid: #cfe6f7; --sc-sky-low: #fbe9cf; --sc-sun: #ffcf5c; --sc-cloud: #ffffff;
+  --sc-hill-far: #b9dcc1; --sc-hill-far-2: #a6d2b2; --sc-hill-mid: #8cc98d; --sc-hill-mid-2: #74b978; --sc-hill-near: #6fb56f; --sc-hill-near-2: #5ea660;
+  --sc-trunk: #7a5a3a; --sc-leaf: #4f9d58; --sc-leaf-2: #5cae63; --sc-wall: #f6f1e8; --sc-wall-2: #e3dbcd; --sc-roof: #c0392b; --sc-door: #7a4b2a;
+  --sc-window: #9fd3f5; --sc-window-lit: 0; --sc-step: #d9cfbf; --sc-path: #e9dcc3; --sc-road: #5d6573; --sc-road-2: #4a515e; --sc-busglass: #cfeaff;
+  --sc-night: 0; --sc-day: 1; --sc-tagline: #1b2a4a; background: var(--sc-sky-top); }
+:root[data-theme="dark"] .auth-art { --sc-sky-top: #0a1230; --sc-sky-mid: #1b2753; --sc-sky-low: #3a3c6c; --sc-sun: #ffd98a; --sc-cloud: #4a5582;
+  --sc-hill-far: #2a3a5c; --sc-hill-far-2: #24324f; --sc-hill-mid: #22394a; --sc-hill-mid-2: #1d3140; --sc-hill-near: #1d3a35; --sc-hill-near-2: #18302c;
+  --sc-trunk: #3b2c22; --sc-leaf: #1f4a35; --sc-leaf-2: #24563d; --sc-wall: #b9b3aa; --sc-wall-2: #8f8a83; --sc-roof: #7d2a22; --sc-door: #4a2e1c;
+  --sc-window: #3a4a6a; --sc-window-lit: 0.9; --sc-step: #6e6a63; --sc-path: #6b6458; --sc-road: #2c313b; --sc-road-2: #23272f; --sc-busglass: #8fb7d6;
+  --sc-night: 1; --sc-day: 0; --sc-tagline: #eef1fb; }
+.auth-tagline { color: var(--sc-tagline); }
+.scene-night { opacity: var(--sc-night); transition: opacity 0.8s ease; }
+.scene-day { opacity: var(--sc-day); transition: opacity 0.8s ease; }
+.scene-window-light { fill: #ffd77a; opacity: var(--sc-window-lit); transition: opacity 0.8s ease; }
+.scene-headlight { fill: #fff3b0; }
+:root[data-theme="dark"] .scene-headlight { fill: #fff7c8; }
+
+/* Motion: transforms and opacity only; one shared set of easing curves. */
+.scene { --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-io: cubic-bezier(0.45, 0, 0.55, 1); }
+.scene * { transform-box: fill-box; }
+.scene-enter { animation: scene-enter 1.1s var(--ease-out) both; }
+@keyframes scene-enter { from { opacity: 0; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
+.scene-depth { transition: transform 0.9s var(--ease-out); transform-box: view-box; }
+.scene-depth-1 { transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px)); }
+.scene-depth-2 { transform: translate(calc(var(--px, 0) * -7px), calc(var(--py, 0) * -3px)); }
+.scene-depth-3 { transform: translate(calc(var(--px, 0) * -11px), calc(var(--py, 0) * -4px)); }
+.scene-depth-4 { transform: translate(calc(var(--px, 0) * -16px), calc(var(--py, 0) * -5px)); }
+
+.scene-sunglow { transform-origin: 50% 50%; animation: scene-breathe 5s var(--ease-io) infinite alternate; }
+@keyframes scene-breathe { from { scale: 0.94; opacity: 0.75; } to { scale: 1.06; opacity: 1; } }
+.scene-star { fill: #fff; animation: scene-twinkle 3.2s var(--ease-io) infinite alternate; }
+@keyframes scene-twinkle { from { opacity: 0.25; } to { opacity: 1; } }
+.scene-cloud { animation: scene-drift 70s linear infinite; }
+@keyframes scene-drift { from { transform: translateX(-320px); } to { transform: translateX(920px); } }
+.scene-flock { animation: scene-fly 26s linear infinite; animation-delay: -6s; }
+@keyframes scene-fly { 0% { transform: translate(-80px, 10px); } 50% { transform: translate(420px, -14px); } 100% { transform: translate(920px, 6px); } }
+.scene-wing { fill: none; stroke: var(--sc-tagline); stroke-width: 1.8; stroke-linecap: round; opacity: 0.7; transform-origin: 50% 100%; animation: scene-flap 0.42s var(--ease-io) infinite alternate; }
+@keyframes scene-flap { from { scale: 1 1; } to { scale: 1 -0.35; } }
+.scene-tree { transform-origin: 50% 100%; animation: scene-sway 6s var(--ease-io) infinite alternate; }
+@keyframes scene-sway { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
+.scene-flag { transform-origin: 0% 50%; animation: scene-wave 1.4s var(--ease-io) infinite alternate; }
+@keyframes scene-wave { 0% { transform: skewY(-5deg) scaleX(1); } 100% { transform: skewY(5deg) scaleX(0.9); } }
+.scene-clock { transform-origin: 50% 100%; animation: scene-spin 30s linear infinite; }
+
+/* Learners: an eased walk cycle (legs and arms swing opposite), a bob twice per step, a soft shadow. */
+.scene-leg line { stroke: #26324d; stroke-width: 6.5; stroke-linecap: round; }
+.scene-shoe { fill: #1b1f2a; }
+.scene-arm line { stroke-width: 4.5; stroke-linecap: round; }
+.scene-leg, .scene-arm { transform-origin: 50% 0%; animation: scene-swing 0.7s var(--ease-io) infinite alternate; }
 .scene-leg-b, .scene-arm-f { animation-direction: alternate-reverse; }
-.scene-leg-b, .scene-arm-b { opacity: 0.75; }
-.scene-bob { animation: scene-bob 0.45s ease-in-out infinite alternate; }
-.scene-walker { animation: scene-walk 16s linear infinite; }
-.scene-bus { animation: scene-drive 11s linear infinite; animation-delay: -4s; }
-.scene-wheel { transform-origin: 50% 50%; animation: scene-spin 0.5s linear infinite; }
-.scene-cloud { animation: scene-drift 60s linear infinite; }
-.scene-sun { animation: scene-glow 4s ease-in-out infinite alternate; transform-origin: 640px 110px; }
-.scene-flag { transform-origin: 0% 50%; animation: scene-wave 1.6s ease-in-out infinite alternate; }
-@keyframes scene-swing { from { transform: rotate(24deg); } to { transform: rotate(-24deg); } }
-@keyframes scene-bob { from { transform: translateY(0); } to { transform: translateY(-2.5px); } }
-@keyframes scene-walk { 0% { transform: translateX(250px); opacity: 0; } 4% { opacity: 1; } 88% { opacity: 1; } 96%, 100% { transform: translateX(640px); opacity: 0; } }
-@keyframes scene-drive { from { transform: translateX(-260px); } to { transform: translateX(900px); } }
-@keyframes scene-spin { to { transform: rotate(360deg); } }
-@keyframes scene-drift { from { transform: translateX(-260px); } to { transform: translateX(900px); } }
-@keyframes scene-glow { from { transform: scale(1); } to { transform: scale(1.06); } }
-@keyframes scene-wave { from { transform: skewY(-4deg) scaleX(1); } to { transform: skewY(5deg) scaleX(0.92); } }
+.scene-leg-b, .scene-arm-b { opacity: 0.72; }
+.scene-arm { animation-name: scene-swing-arm; }
+@keyframes scene-swing { from { rotate: 24deg; } to { rotate: -24deg; } }
+@keyframes scene-swing-arm { from { rotate: -20deg; } to { rotate: 20deg; } }
+.scene-bob { animation: scene-bob 0.35s var(--ease-io) infinite alternate; }
+@keyframes scene-bob { from { translate: 0 0; } to { translate: 0 -2.5px; } }
+.scene-shadow { fill: #000; opacity: 0.18; transform-origin: 50% 50%; animation: scene-shadow 0.35s var(--ease-io) infinite alternate; }
+@keyframes scene-shadow { from { scale: 1 1; } to { scale: 0.86 1; } }
+.scene-walker { animation: scene-walk 20s linear infinite; transform-box: view-box; }
+@keyframes scene-walk { 0% { transform: translateX(-60px); opacity: 0; } 5% { opacity: 1; } 84% { transform: translateX(612px); opacity: 1; } 92%, 100% { transform: translateX(648px); opacity: 0; } }
+
+/* The bus eases in, stops at the school, then pulls away; the wheels turn exactly with the distance travelled. */
+.scene-bus { animation: scene-drive 14s infinite; transform-box: view-box; }
+@keyframes scene-drive {
+  0% { transform: translateX(-240px); animation-timing-function: cubic-bezier(0.25, 0.6, 0.3, 1); }
+  32% { transform: translateX(470px); }
+  48% { transform: translateX(470px); animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.4); }
+  100% { transform: translateX(920px); }
+}
+.scene-wheel { transform-origin: 50% 50%; animation: scene-roll 14s infinite; }
+@keyframes scene-roll {
+  0% { rotate: 0deg; animation-timing-function: cubic-bezier(0.25, 0.6, 0.3, 1); }
+  32% { rotate: 2712deg; }
+  48% { rotate: 2712deg; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.4); }
+  100% { rotate: 4431deg; }
+}
+.scene-suspension { animation: scene-bounce 0.3s var(--ease-io) infinite alternate; }
+@keyframes scene-bounce { from { translate: 0 0; } to { translate: 0 1.2px; } }
+.scene-exhaust circle { fill: #9aa1ad; opacity: 0; transform-origin: 50% 50%; animation: scene-puff 1.4s var(--ease-out) infinite; }
+.scene-exhaust circle:nth-child(2) { animation-delay: 0.45s; }
+.scene-exhaust circle:nth-child(3) { animation-delay: 0.9s; }
+@keyframes scene-puff { 0% { opacity: 0.55; translate: 0 0; scale: 0.6; } 100% { opacity: 0; translate: -18px -8px; scale: 1.8; } }
+@keyframes scene-spin { to { rotate: 360deg; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .auth-art * { animation: none !important; }
-  .scene-walker { transform: translateX(320px); }
+  .auth-art *, .auth-art .scene * { animation: none !important; transition: none !important; }
+  .scene-walker { transform: translateX(340px); }
+  .scene-bus { transform: translateX(470px); }
+  .scene-exhaust circle { opacity: 0; }
 }
 @media (max-width: 860px) {
   .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
