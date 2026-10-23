@@ -1,5 +1,6 @@
 "use client";
 
+import { readSpreadsheet, SPREADSHEET_ACCEPT } from "@/components/readSpreadsheet";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ImportReport } from "@/lib/importer";
@@ -43,15 +44,17 @@ export default function ImportCard() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (/\.xlsx?$/i.test(file.name)) {
-      setError('That looks like an Excel file. In Excel choose File → Save As → "CSV UTF-8", then upload the .csv file.');
-      return;
-    }
     setError(null);
     setResult(null);
     setPreview(null);
     setFileName(file.name);
-    const text = await file.text();
+    let text: string;
+    try {
+      text = await readSpreadsheet(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that file");
+      return;
+    }
     setCsv(text);
     setBusy("preview");
     setPreview(await send(text, true));
@@ -86,12 +89,12 @@ export default function ImportCard() {
       <p className="small muted">
         One row per student with their class, and optionally their admission number (the M-Pesa account number) and a parent&apos;s name and phone number. Missing classes are created;
         brothers and sisters with the same parent phone share one parent account; re-importing the same file adds nothing twice.
-        Parents sign in with their phone number. In Excel or Google Sheets, save or download the sheet as <strong>CSV</strong>.
+        Parents sign in with their phone number. Upload the Excel file as it is (.xlsx, first sheet), or a CSV.
       </p>
       <div className="row">
         <label className="button secondary" style={{ cursor: "pointer", fontSize: "inherit" }}>
-          Choose CSV file…
-          <input type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
+          Choose Excel or CSV file…
+          <input type="file" accept={SPREADSHEET_ACCEPT} onChange={onFile} style={{ display: "none" }} />
         </label>
         {fileName && <span className="small muted">{fileName}</span>}
       </div>

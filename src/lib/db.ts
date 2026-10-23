@@ -3,6 +3,7 @@ import path from "node:path";
 import { backupDir, dailySnapshotDue, encryptPlainSnapshots, listSnapshots, writeSnapshot, type SnapshotReason } from "./backup.ts";
 import { encryptionConfigured, isEncrypted, seal, unseal } from "./dataCrypto.ts";
 import { migrateDatabase } from "./migrate.ts";
+import { rememberProfileName } from "./schoolProfile.ts";
 import { initialDatabase } from "./seed.ts";
 import type { Database } from "./types.ts";
 
@@ -36,10 +37,12 @@ async function load(): Promise<Database> {
     if (migrateDatabase(db) || encryptNow) await persist(db);
     if (encryptNow) await encryptPlainSnapshots(backupDir(dataFile()));
     store.db = db;
+    rememberProfileName(db);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     store.db = initialDatabase();
     await persist(store.db);
+    rememberProfileName(store.db);
   }
   return store.db;
 }
@@ -69,6 +72,7 @@ export function mutateDb<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
     const result = await fn(draft);
     await persist(draft);
     store.db = draft;
+    rememberProfileName(draft);
     await maybeDailySnapshot(draft);
     return result;
   });
@@ -107,6 +111,7 @@ export function replaceDb(next: Database) {
     migrateDatabase(next);
     await persist(next);
     store.db = next;
+    rememberProfileName(next);
   });
   store.queue = run.catch(() => undefined);
   return run;
@@ -120,6 +125,7 @@ export function backupDirectory(): string {
 export function resetDbCache(): void {
   store.db = null;
   store.nextDailyCheck = 0;
+  rememberProfileName(null);
 }
 
 export function newId(prefix: string): string {

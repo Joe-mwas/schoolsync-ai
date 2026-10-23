@@ -249,6 +249,45 @@ export interface Database {
   duties: Duty[];
   assignments: Assignment[];
   passwordHelp: PasswordHelpRequest[];
+  /** The school's own details and logo, filled in during onboarding (Setup). */
+  profile: SchoolProfile;
+  documents: SchoolDocument[];
+}
+
+export interface SchoolProfile {
+  name: string;
+  motto: string;
+  website: string;
+  phone: string;
+  email: string;
+  address: string;
+  logo: FactImage | null;
+  updatedAt: string | null;
+}
+
+export const DOCUMENT_CATEGORIES = {
+  instructions: "Instructions from the director or principal",
+  students: "Student and parent lists",
+  fees: "Fees and finance",
+  policies: "Policies and rules",
+  other: "Other",
+} as const;
+export type DocumentCategory = keyof typeof DOCUMENT_CATEGORIES;
+
+/** A file the school handed over during onboarding (stored encrypted when DATA_ENCRYPTION_KEY is set). */
+export interface SchoolDocument {
+  id: string;
+  title: string;
+  category: DocumentCategory;
+  fileName: string;
+  /** What the file is, e.g. "PDF", "Excel", "Word". */
+  kind: string;
+  size: number;
+  /** Name of the stored file in the documents folder. */
+  storedAs: string;
+  note: string;
+  uploadedBy: string;
+  uploadedAt: string;
 }
 
 /** Someone who forgot their password asked, from the sign-in page, for a new one. */

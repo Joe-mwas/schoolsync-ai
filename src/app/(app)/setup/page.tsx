@@ -1,182 +1,105 @@
-import { headers } from "next/headers";
+import Link from "next/link";
+import { aiConfigured, schoolName } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
-import { listSnapshots } from "@/lib/backup";
-import { backupDirectory } from "@/lib/db";
-import { callbackUrls, mpesaReceiving } from "@/lib/daraja";
-import { displayOrigin } from "@/lib/publicUrl";
-import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "@/lib/setupStatus";
-import { webhookActivity } from "@/lib/webhookActivity";
 import { encryptionConfigured } from "@/lib/dataCrypto";
-import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
-import { CopyButton, GenerateKey, OffsiteBackupButton, TestButton } from "./SetupTools";
+import { readDb } from "@/lib/db";
+import { offsiteConfig } from "@/lib/offsite";
+import { DOCUMENT_CATEGORIES } from "@/lib/types";
+import { whatsappConfigured } from "@/lib/whatsapp";
+import ImportCard from "../school/ImportCard";
+import { DocumentsManager, LogoUploader, ProfileForm } from "./OnboardingForms";
+import SetupTabs from "./SetupTabs";
 
-const PILL: Record<ItemStatus, { label: string; className: string }> = {
-  ok: { label: "Ready", className: "badge ok" },
-  missing: { label: "Missing", className: "badge urgent" },
-  warn: { label: "Check", className: "badge urgent" },
-  optional: { label: "Optional", className: "badge" },
-};
-
-function when(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleString("en-GB") : "not since the app last restarted";
+interface Step {
+  label: string;
+  detail: string;
+  done: boolean;
+  href: string;
+  optional?: boolean;
 }
 
-function Checklist({ section }: { section: SetupSection }) {
-  return (
-    <ul className="list">
-      {section.items.map((item) => (
-        <li key={item.id} className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
-          <span className={PILL[item.status].className} style={{ minWidth: 70, textAlign: "center" }}>{PILL[item.status].label}</span>
-          <div>
-            <strong>{item.label}</strong>
-            {item.envVar && <code className="small" style={{ marginLeft: 8 }}>{item.envVar}</code>}
-            <div className="small muted">{item.detail}</div>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export default async function SetupPage() {
-  const me = await requireUser(["admin"]);
-  const snapshots = await listSnapshots(backupDirectory());
-  const sections = setupChecklist(process.env, { lastBackupAt: snapshots[0]?.createdAt ?? null });
-  const { ready, total } = countReady(sections);
-  const webhookUrl = `${displayOrigin(await headers())}/api/whatsapp/webhook`;
-  const activity = webhookActivity();
-  const [basics, ai, whatsapp, mpesa] = sections;
-  const encrypted = encryptionConfigured();
-  const offsite = offsiteConfig();
-  const offsiteStatus = await readOffsiteStatus(backupDirectory());
-  const paymentsUrl = mpesaReceiving() ? callbackUrls(displayOrigin(await headers())).confirmation.replace(/\/c2b\/[^/]+\//, "/c2b/••••••/") : null;
+/** Onboarding a school: its details and logo, its learners, its documents, and what's still to do. */
+export default async function OnboardingPage() {
+  await requireUser(["admin"]);
+  const db = await readDb();
+  const count = (role: string) => db.users.filter((u) => u.role === role).length;
+  const p = db.profile;
+  const steps: Step[] = [
+    { label: "School details", detail: p.name ? p.name : "Name, contacts and website", done: Boolean(p.name && (p.phone || p.email)), href: "#profile" },
+    { label: "School logo", detail: p.logo ? "Uploaded" : "Shows on sign-in and in the menu", done: Boolean(p.logo), href: "#profile" },
+    { label: "Classes and learners", detail: count("student") ? `${count("student")} learner${count("student") === 1 ? "" : "s"} in ${db.classes.length} class${db.classes.length === 1 ? "" : "es"}` : "Upload the class list (Excel or CSV)", done: count("student") > 0, href: "#students" },
+    { label: "Teachers and staff", detail: count("teacher") ? `${count("teacher")} teachers` : "Add them in School Admin", done: count("teacher") > 0, href: "/school" },
+    { label: "Term fees", detail: db.fees.some((f) => f.kind === "charge") ? "Fees set" : "Set fees or upload the fees sheet", done: db.fees.some((f) => f.kind === "charge"), href: "/fees" },
+    { label: "School facts", detail: db.facts.length ? `${db.facts.length} facts for the AI` : "Uniform, term dates, how to pay…", done: db.facts.length > 0, href: "/facts" },
+    { label: "Documents", detail: db.documents.length ? `${db.documents.length} on file` : "Instructions, policies, fee structures", done: db.documents.length > 0, href: "#documents", optional: true },
+    { label: "Claude AI", detail: aiConfigured() ? "Connected" : "Add the API key", done: aiConfigured(), href: "/setup/connections" },
+    { label: "WhatsApp", detail: whatsappConfigured() ? "Connected" : "Connect Meta WhatsApp", done: whatsappConfigured(), href: "/setup/connections" },
+    { label: "Data encryption", detail: encryptionConfigured() ? "On" : "Add the encryption key", done: encryptionConfigured(), href: "/setup/connections#security" },
+    { label: "Off-site backup", detail: offsiteConfig() ? "Daily copy on" : "Connect Cloudflare R2", done: Boolean(offsiteConfig()), href: "/setup/connections#security" },
+  ];
+  const required = steps.filter((s) => !s.optional);
+  const done = required.filter((s) => s.done).length;
+  const pct = Math.round((done / required.length) * 100);
+  const names = Object.fromEntries(db.users.map((u) => [u.id, u.name]));
 
   return (
     <div className="stack">
+      <SetupTabs active="onboarding" />
       <div className="page-header">
         <div>
-          <h1>Setup</h1>
-          <p>What&apos;s connected, what&apos;s missing, and buttons to test each connection.</p>
+          <h1>Onboarding</h1>
+          <p>Everything a new school needs, in one place: its details and logo, learners, documents, and the connections still to set up.</p>
         </div>
-        <span className={`badge ${ready === total ? "ok" : "urgent"}`}>{ready} of {total} required items ready</span>
       </div>
 
-      <div className="notice" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
-        <strong>To change a setting:</strong> in Render open <strong>schoolsync-ai → Environment</strong>, add or edit the setting
-        named below, click <strong>Save Changes</strong>, wait until the new deploy says <strong>Live</strong> (about 2–5 minutes),
-        then reload this page. Never paste keys or secrets into chats or emails.
-      </div>
-
-      <div className="card stack">
-        <h2>{basics.title}</h2>
-        <Checklist section={basics} />
-      </div>
-
-      <div className="card stack">
-        <h2>Security &amp; off-site backups</h2>
-        <p className="small muted">
-          Keeps the school&apos;s data private if a file ever leaks, and safe if Render&apos;s disk or account is ever lost.
-        </p>
-        <ul className="list">
-          <li className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
-            <span className={encrypted ? "badge ok" : "badge urgent"} style={{ minWidth: 70, textAlign: "center" }}>{encrypted ? "Ready" : "Missing"}</span>
-            <div>
-              <strong>Encrypt the data and backups</strong><code className="small" style={{ marginLeft: 8 }}>DATA_ENCRYPTION_KEY</code>
-              <div className="small muted">
-                {encrypted
-                  ? "The data file and every backup are encrypted (AES-256). Keep a safe copy of the key: a new server needs the same key to open them."
-                  : "Generate a key below, save it somewhere safe, then add it in Render. Existing data and backups are encrypted on the next start."}
-              </div>
-            </div>
-          </li>
-          <li className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}>
-            <span className={offsite ? "badge ok" : "badge urgent"} style={{ minWidth: 70, textAlign: "center" }}>{offsite ? "Ready" : "Missing"}</span>
-            <div>
-              <strong>Off-site storage</strong>
-              <code className="small" style={{ marginLeft: 8 }}>OFFSITE_BACKUP_ENDPOINT, _BUCKET, _ACCESS_KEY_ID, _SECRET_ACCESS_KEY</code>
-              <div className="small muted">
-                {offsite
-                  ? `Every day an encrypted copy goes to the "${offsite.bucket}" bucket.`
-                  : "A storage bucket outside Render (Cloudflare R2, Backblaze B2 or Amazon S3) for a daily encrypted copy."}
-              </div>
-            </div>
-          </li>
-          {offsite && (
-            <li className="small">
-              Last off-site copy: <strong>{offsiteStatus.lastSuccessAt ? new Date(offsiteStatus.lastSuccessAt).toLocaleString("en-GB", { timeZone: "Africa/Nairobi" }) : "none yet"}</strong>
-              {offsiteStatus.lastObject && <span className="muted"> · {offsiteStatus.lastObject}</span>}
-              {offsiteStatus.lastError && <div style={{ color: "var(--danger)" }}>Last attempt failed: {offsiteStatus.lastError}</div>}
+      <section className="card stack onboarding-progress" aria-labelledby="progress-title">
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div>
+            <h2 id="progress-title" style={{ margin: 0 }}>{p.name || schoolName()}</h2>
+            <div className="small muted">{done} of {required.length} steps done</div>
+          </div>
+          <strong className="progress-figure">{pct}%</strong>
+        </div>
+        <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Onboarding progress"><span style={{ width: `${pct}%` }} /></div>
+        <ul className="steps">
+          {steps.map((s) => (
+            <li key={s.label}>
+              <Link href={s.href} className={`step${s.done ? " is-done" : ""}`}>
+                <span className="step-mark" aria-hidden="true">{s.done ? "✓" : ""}</span>
+                <span className="step-text">
+                  <strong>{s.label}{s.optional ? <span className="muted small"> · optional</span> : null}</strong>
+                  <span className="small muted">{s.detail}</span>
+                </span>
+              </Link>
             </li>
-          )}
+          ))}
         </ul>
-        {!encrypted && <GenerateKey />}
-        {offsite && encrypted && <OffsiteBackupButton />}
-      </div>
+      </section>
 
-      <div className="card stack">
-        <h2>{ai.title}</h2>
-        <p className="small muted">Powers the AI Assistant, &quot;Draft with AI&quot; on announcements, and automatic WhatsApp replies.</p>
-        <Checklist section={ai} />
-        <TestButton kind="ai" label="Test AI" />
-      </div>
-
-      <div className="card stack">
-        <h2>{whatsapp.title}</h2>
-        <p className="small muted">Sends announcements to parents&apos; phones and lets the assistant answer their messages.</p>
-        <Checklist section={whatsapp} />
-
-        <div className="stack" style={{ background: "var(--surface-2)", padding: "0.75rem", borderRadius: 8 }}>
-          <div className="small" style={{ fontWeight: 600 }}>Webhook address (paste into Meta → WhatsApp → Configuration → Callback URL)</div>
-          <div className="row">
-            <code style={{ wordBreak: "break-all" }}>{webhookUrl}</code>
-            <CopyButton text={webhookUrl} />
-          </div>
-          <div className="small muted">
-            Then type your <code>WHATSAPP_VERIFY_TOKEN</code> phrase as the Verify token, click Verify and save, and subscribe to{" "}
-            <strong>messages</strong>.
-          </div>
-          <div className="small muted">
-            Meta last verified the webhook: {when(activity.verifiedAt)}. Meta last delivered a message or receipt: {when(activity.receivedAt)}.
-          </div>
-        </div>
-
-        <div className="stack">
-          <div className="small" style={{ fontWeight: 600 }}>1. Check the access token and phone number ID (sends nothing)</div>
-          <TestButton kind="whatsapp-credentials" label="Check WhatsApp connection" />
-          <div className="small" style={{ fontWeight: 600 }}>2. Check the webhook answers Meta correctly</div>
-          <TestButton kind="webhook" label="Test webhook" />
-          <div className="small" style={{ fontWeight: 600 }}>3. Send a real test message</div>
-          <TestButton kind="whatsapp-send" label="Send test WhatsApp" defaultPhone={me.phone ?? ""} />
-          <div className="small muted">
-            On Meta&apos;s free test number, the phone must first be added under API Setup → To. For normal messages the person must
-            have messaged the school in the last 24 hours.
-          </div>
-        </div>
-      </div>
-
-      <div className="card stack">
-        <h2>{mpesa.title}</h2>
-        <p className="small muted">
-          Records Paybill payments in the learner&apos;s fees automatically and WhatsApps the parent a receipt. Parents use the
-          learner&apos;s <strong>admission number</strong> as the account number. Optional: skip this if the school doesn&apos;t use a Paybill.
-        </p>
-        <Checklist section={mpesa} />
-        {paymentsUrl && (
-          <div className="small muted">
-            Safaricom will send payments to <code style={{ wordBreak: "break-all" }}>{paymentsUrl}</code> (the hidden part is your secret).
-          </div>
+      <section className="card stack" id="profile">
+        <h2 style={{ margin: 0 }}>School details and logo</h2>
+        <LogoUploader hasLogo={Boolean(p.logo)} version={p.logo?.file ?? ""} />
+        <ProfileForm profile={p} fallbackName={process.env.SCHOOL_NAME?.trim() ?? ""} />
+        {p.website && (
+          <div className="small">Website: <a href={p.website} target="_blank" rel="noopener noreferrer">{p.website.replace(/^https?:\/\//, "")} ↗</a></div>
         )}
-        <div className="stack">
-          <div className="small" style={{ fontWeight: 600 }}>1. Check the consumer key and secret (changes nothing)</div>
-          <TestButton kind="mpesa-credentials" label="Check M-Pesa connection" />
-          <div className="small" style={{ fontWeight: 600 }}>2. Tell Safaricom to send this Paybill&apos;s payments here</div>
-          <TestButton kind="mpesa-register" label="Register with Safaricom" />
-          <div className="small muted">
-            Register once, and again only if the site address or secret changes. Then try a small payment, or use{" "}
-            <strong>Test a payment</strong> on the Fees page.
-          </div>
-        </div>
+      </section>
+
+      <div id="students">
+        <ImportCard />
       </div>
+
+      <section className="card stack" id="documents">
+        <div>
+          <h2 style={{ margin: 0 }}>Documents</h2>
+          <p className="small muted" style={{ margin: "4px 0 0" }}>
+            Keep what the school gives you during onboarding: the director&apos;s or principal&apos;s instructions, policies, fee
+            structures and class lists. Only the administrator can see them{encryptionConfigured() ? ", and they're stored encrypted" : ""}.
+            To load learners from a class list, use <a href="#students">Import from a spreadsheet</a> above.
+          </p>
+        </div>
+        <DocumentsManager documents={[...db.documents].reverse()} categories={DOCUMENT_CATEGORIES} names={names} />
+      </section>
     </div>
   );
 }

@@ -1,4 +1,6 @@
-import type { Database } from "./types.ts";
+import type { Database, SchoolProfile } from "./types.ts";
+
+export const emptyProfile = (): SchoolProfile => ({ name: "", motto: "", website: "", phone: "", email: "", address: "", logo: null, updatedAt: null });
 
 /**
  * Bring data saved by older versions up to date. Returns true if anything
@@ -6,11 +8,15 @@ import type { Database } from "./types.ts";
  */
 export function migrateDatabase(db: Database, env: Record<string, string | undefined> = process.env): boolean {
   let changed = false;
-  for (const key of ["aiLogs", "results", "resultComments", "fees", "facts", "mpesaPayments", "adminActions", "featureRequests", "forwardedQuestions", "duties", "assignments", "passwordHelp"] as const) {
+  for (const key of ["aiLogs", "results", "resultComments", "fees", "facts", "mpesaPayments", "adminActions", "featureRequests", "forwardedQuestions", "duties", "assignments", "passwordHelp", "documents"] as const) {
     if (!Array.isArray(db[key])) {
       (db as unknown as Record<string, unknown[]>)[key] = [];
       changed = true;
     }
+  }
+  if (!db.profile || typeof db.profile !== "object") {
+    db.profile = emptyProfile();
+    changed = true;
   }
   // Before the administrator role existed, the account created from
   // ADMIN_EMAIL was a director; it becomes the administrator.

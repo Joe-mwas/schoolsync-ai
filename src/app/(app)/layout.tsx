@@ -3,7 +3,9 @@ import ChangePasswordForm from "@/components/ChangePasswordForm";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { currentTheme } from "@/lib/theme";
+import { schoolName } from "@/lib/ai";
 import { requireUser } from "@/lib/auth";
+import { readDb } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { ASSIGNMENT_SETTERS, DUTY_VIEWERS, FEE_VIEWERS, OFFICE, PEOPLE_MANAGERS, POSTER_MAKERS, SCHOOL_WIDE, STAFF, WHATSAPP_INBOX, type Role } from "@/lib/types";
 
@@ -34,6 +36,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const { profile } = await readDb();
   const items = NAV.filter((n) => !n.roles || n.roles.includes(user.role)).map(({ href, label }) => ({ href, label }));
   return (
     <div className="shell">
@@ -42,6 +45,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="brand">
             <BrandMark /> SchoolSync
           </div>
+          {(profile.logo || profile.name) && (
+            <div className="school-badge">
+              {profile.logo && <img src={`/api/school/logo?v=${encodeURIComponent(profile.logo.file)}`} alt="" width={28} height={28} />}
+              <span>{profile.name || schoolName()}</span>
+            </div>
+          )}
           <Nav items={items} />
           <div className="user-card">
             <strong>{user.name}</strong>

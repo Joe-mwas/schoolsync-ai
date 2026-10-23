@@ -154,9 +154,13 @@ export interface FeesImportReport {
  * the term, so re-uploading the latest sheet is safe. Payments recorded by
  * hand in SchoolSync are kept separately.
  */
-/** An optional Date column: 2026-02-14 or 14/02/2026 (day first, as in Kenya). Blank means today. */
+/** An optional Date column: 2026-02-14, 14/02/2026 (day first, as in Kenya) or an Excel date. Blank means today. */
 export function importDate(raw: string): string | undefined {
   if (!raw) return undefined;
+  // Excel keeps dates as day numbers counted from 30 Dec 1899 (e.g. 46067 = 14 Feb 2026).
+  if (/^\d{5}(\.\d+)?$/.test(raw) && Number(raw) > 20000 && Number(raw) < 80000) {
+    return new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(raw)) * 86_400_000).toISOString().slice(0, 10);
+  }
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(raw);
   const ymd = m ? [m[1], m[2], m[3]] : (m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(raw)) ? [m[3], m[2], m[1]] : null;
   if (ymd) {
