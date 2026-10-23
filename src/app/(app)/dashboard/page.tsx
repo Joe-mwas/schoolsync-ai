@@ -99,7 +99,9 @@ function DirectorDashboard({ user, db }: { user: User; db: Database }) {
         <PasswordHelpCard
           requests={db.passwordHelp
             .filter((r) => r.status === "open")
-            .map((r) => ({ id: r.id, name: r.name, contact: r.contact, role: r.role ? ROLE_LABELS[r.role] : null, note: r.note, account: describeAccount(db, r), matched: Boolean(r.userId && db.users.some((u) => u.id === r.userId)), createdAt: r.createdAt }))}
+            .map((r) => ({ id: r.id, name: r.name, contact: r.contact, role: r.role ? ROLE_LABELS[r.role] : null, roleKey: r.role, note: r.note, account: describeAccount(db, r), matched: Boolean(r.userId && db.users.some((u) => u.id === r.userId)), createdAt: r.createdAt }))}
+          classes={db.classes.map((c) => ({ id: c.id, name: c.name }))}
+          learners={db.users.filter((u) => u.role === "student").map((u) => ({ id: u.id, name: `${u.name}${u.classIds.length ? ` (${u.classIds.map((id) => db.classes.find((c) => c.id === id)?.name).filter(Boolean).join(", ")})` : ""}` })).sort((a, b) => a.name.localeCompare(b.name))}
         />
       )}
       {/* The director (and administrator) see every chart; the headteacher how classes perform; the secretary the money. */}

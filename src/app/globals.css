@@ -556,3 +556,5 @@ h2 { letter-spacing: -0.01em; }
 .meter.is-full span { background: var(--danger); }
 label.check-row { flex-direction: row; align-items: flex-start; gap: 10px; font-weight: 400; font-size: 0.9rem; }
 label.check-row input { width: auto; margin-top: 4px; flex: none; }
+.add-from-request { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 12px; border-radius: 10px; background: var(--surface-2); }
+.add-from-request label { flex: 0 1 200px; }

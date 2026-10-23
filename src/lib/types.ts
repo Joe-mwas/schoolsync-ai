@@ -423,7 +423,7 @@ export interface PasswordHelpRequest {
   note: string;
   /** The account those details match, if any (never told to the person asking). */
   userId: string | null;
-  status: "open" | "reset" | "dismissed";
+  status: "open" | "reset" | "added" | "dismissed";
   createdAt: string;
   handledAt: string | null;
   handledBy: string | null;
