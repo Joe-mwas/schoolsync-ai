@@ -28,7 +28,7 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-/** Each icon's own colour, for the coloured tiles in the menu. Bright enough to read on the navy or dark menu. */
+/** Each icon's own colour in the menu. Bright enough to read on the navy or dark menu. */
 const COLOURS: Record<IconName, string> = {
   home: "#5b8cff", pin: "#ff7a59", megaphone: "#f5a524", sparkles: "#b57bff", book: "#38bdf8", chart: "#22c55e",
   wallet: "#10b981", info: "#60a5fa", calendar: "#f43f5e", clipboard: "#f59e0b", image: "#ec4899", chat: "#25d366",
@@ -44,10 +44,13 @@ export default function Icon({ name, size = 20 }: { name: IconName; size?: numbe
   );
 }
 
-/** The icon on a softly tinted rounded tile in its own colour (solid when the item is the current page; see .ic-tile). */
-export function IconTile({ name, size = 17 }: { name: IconName; size?: number }) {
+/** `style` that hands an icon's colour to a menu row (as --ic), so the row's highlight can match it. */
+export const iconColour = (name: IconName) => ({ "--ic": COLOURS[name] }) as React.CSSProperties;
+
+/** The icon drawn in its own colour (no tile or border; it glows softly on the current page; see .ic-tile). */
+export function IconTile({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
-    <span className="ic-tile" style={{ "--ic": COLOURS[name] } as React.CSSProperties}>
+    <span className="ic-tile" style={iconColour(name)}>
       <Icon name={name} size={size} />
     </span>
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { IconTile, type IconName } from "./Icon";
+import { IconTile, iconColour, type IconName } from "./Icon";
 
 export type NavGroup = "everyday" | "school" | "admin" | "you";
 
@@ -31,7 +31,7 @@ export default function Nav({ items }: { items: NavItem[] }) {
         <div key={g} className="nav-group">
           {GROUP_TITLES[g] && <div className="nav-heading">{GROUP_TITLES[g]}</div>}
           {list.map((item) => (
-            <Link key={item.href + item.label} href={item.href} className={isActive(pathname, item.href) ? "active" : undefined} title={item.label}>
+            <Link key={item.href + item.label} href={item.href} className={isActive(pathname, item.href) ? "active" : undefined} style={iconColour(item.icon)} title={item.label}>
               <IconTile name={item.icon} />
               <span className="nav-label">{item.label}</span>
             </Link>
@@ -90,13 +90,13 @@ export function MobileBar({ items, main, footer }: { items: NavItem[]; main: str
       )}
       <nav className="tabbar" aria-label="Main">
         {quick.map((i) => (
-          <Link key={i.href} href={i.href} className={isActive(pathname, i.href) ? "active" : undefined}>
-            <IconTile name={i.icon} size={19} />
+          <Link key={i.href} href={i.href} className={isActive(pathname, i.href) ? "active" : undefined} style={iconColour(i.icon)}>
+            <IconTile name={i.icon} size={22} />
             <span>{SHORT[i.label] ?? i.label}</span>
           </Link>
         ))}
         <button type="button" className={`tab-more${open || moreActive ? " active" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}>
-          <IconTile name="more" size={19} />
+          <IconTile name="more" size={22} />
           <span>More</span>
         </button>
       </nav>
