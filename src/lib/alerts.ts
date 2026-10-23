@@ -14,7 +14,7 @@ export async function alertAnnouncement(a: Announcement): Promise<void> {
   const db = await readDb();
   const to = db.users.filter((u) => u.id !== a.authorId && canSeeAnnouncement(u, a, db)).map((u) => u.id);
   const kind = a.posterId ? "New poster" : a.priority === "urgent" ? "Urgent" : "New announcement";
-  await pushTo(to, { title: `${kind}: ${a.title}`, body: a.body.slice(0, 160), url: "/dashboard#noticeboard", tag: `a-${a.id}` });
+  await pushTo(to, { title: `${kind}: ${a.title}`, body: a.body.slice(0, 160), url: `/noticeboard#a-${a.id}`, tag: `a-${a.id}` });
 }
 
 /** New results for these learners: their parents (and the learners) are told. */

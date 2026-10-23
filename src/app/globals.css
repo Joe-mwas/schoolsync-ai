@@ -585,3 +585,11 @@ label.check-row input { width: auto; margin-top: 4px; flex: none; }
 .noticeboard .is-new > .announcement { box-shadow: 0 0 0 2px var(--primary); }
 .noticeboard .is-new > .announcement h3::after { content: "New"; margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--primary); color: var(--primary-contrast); font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
 .share-poster { padding: 12px; border-radius: 10px; background: var(--surface-2); gap: 10px; }
+
+/* Noticeboard page */
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
+.board-item { display: flex; flex-direction: column; gap: 10px; }
+.board-item .poster-canvas { width: 100%; height: auto; margin-bottom: 0 !important; border-radius: 10px; }
+.board-item.urgent { border-color: var(--danger); }
+.board-item.is-new { box-shadow: 0 0 0 2px var(--primary); }
+.new-tag { margin-left: 8px; padding: 1px 8px; border-radius: 99px; background: var(--primary); color: var(--primary-contrast); font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
