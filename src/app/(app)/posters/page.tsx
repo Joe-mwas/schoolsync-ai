@@ -19,6 +19,7 @@ export default async function PostersPage() {
         initialPosters={posters}
         classes={db.classes.filter((c) => isSchoolWide(user.role) || user.classIds.includes(c.id)).map((c) => ({ id: c.id, name: c.name }))}
         classRequired={!isSchoolWide(user.role)}
+        sharedIds={[...new Set(db.announcements.map((a) => a.posterId).filter((id): id is string => Boolean(id)))]}
       />
     </div>
   );

@@ -12,7 +12,7 @@ const AUDIENCES: Record<Audience, { label: string; roles: string[] }> = {
   staff: { label: "Staff only", roles: ["teacher"] },
 };
 
-export default function Designer({ initialPosters, classes = [], classRequired = false }: { initialPosters: Poster[]; classes?: { id: string; name: string }[]; classRequired?: boolean }) {
+export default function Designer({ initialPosters, classes = [], classRequired = false, sharedIds = [] }: { initialPosters: Poster[]; classes?: { id: string; name: string }[]; classRequired?: boolean; sharedIds?: string[] }) {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [posters, setPosters] = useState(initialPosters);
@@ -22,6 +22,7 @@ export default function Designer({ initialPosters, classes = [], classRequired =
   const [status, setStatus] = useState<string | null>(null);
   const [share, setShare] = useState<{ audience: Audience; classId: string; message: string } | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(() => new Set(sharedIds));
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
@@ -68,6 +69,15 @@ export default function Designer({ initialPosters, classes = [], classRequired =
     return saved.id;
   }
 
+  /** Saving keeps a draft; a poster that isn't on the noticeboard yet goes straight to the share step. */
+  async function saveAndOfferShare() {
+    const id = await save();
+    if (id && !shared.has(id)) {
+      startShare();
+      setStatus("Saved. It isn't on the noticeboard yet: choose who should see it and click Share now.");
+    }
+  }
+
   function startShare() {
     setShare({ audience: "everyone", classId: classRequired ? classes[0]?.id ?? "" : "", message: [design.subtitle, design.body].filter((x) => x.trim()).join("\n") });
     setStatus(null);
@@ -96,6 +106,7 @@ export default function Designer({ initialPosters, classes = [], classRequired =
     setSharing(false);
     if (!res.ok) return setStatus(data.error ?? "Couldn't share it");
     setShare(null);
+    setShared((set) => new Set(set).add(posterId));
     setStatus("Shared ✅ It's on the noticeboard of everyone you chose, and their phones are notified.");
   }
 
@@ -170,8 +181,10 @@ export default function Designer({ initialPosters, classes = [], classRequired =
           </label>
         </div>
         <div className="row">
-          <button onClick={save}>{currentId ? "Save changes" : "Save poster"}</button>
-          <button className="secondary" onClick={startShare} id="share-poster">Share on the noticeboard</button>
+          <button onClick={saveAndOfferShare}>{currentId ? "Save changes" : "Save poster"}</button>
+          <button className={currentId && shared.has(currentId) ? "secondary" : ""} onClick={startShare} id="share-poster">
+            {currentId && shared.has(currentId) ? "Share again" : "Share on the noticeboard"}
+          </button>
           <button className="secondary" onClick={download}>Download PNG</button>
           <button className="secondary" onClick={startNew}>New</button>
         </div>
@@ -215,11 +228,17 @@ export default function Designer({ initialPosters, classes = [], classRequired =
             <ul className="list">
               {posters.map((p) => (
                 <li key={p.id} className="row" style={{ justifyContent: "space-between" }}>
-                  <button className="link" onClick={() => load(p)}>
-                    {p.name}
-                    {p.id === currentId ? " (editing)" : ""}
-                  </button>
-                  <button className="danger small" onClick={() => remove(p.id)}>Delete</button>
+                  <span>
+                    <button className="link" onClick={() => load(p)}>
+                      {p.name}
+                      {p.id === currentId ? " (editing)" : ""}
+                    </button>
+                    <span className={`badge ${shared.has(p.id) ? "ok" : "urgent"}`} style={{ marginLeft: 8 }}>{shared.has(p.id) ? "📌 On the noticeboard" : "Not shared yet"}</span>
+                  </span>
+                  <span className="row" style={{ gap: 6 }}>
+                    {!shared.has(p.id) && <button className="small" onClick={() => { load(p); setShare({ audience: "everyone", classId: classRequired ? classes[0]?.id ?? "" : "", message: [p.design.subtitle, p.design.body].filter((x) => x.trim()).join("\n") }); }}>Share</button>}
+                    <button className="danger small" onClick={() => remove(p.id)}>Delete</button>
+                  </span>
                 </li>
               ))}
             </ul>
