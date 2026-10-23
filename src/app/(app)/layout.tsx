@@ -1,5 +1,6 @@
 import BrandMark from "@/components/BrandMark";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import ChatBuddy from "@/components/ChatBuddy";
 import Nav, { SignOutButton, type NavItem } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { currentTheme } from "@/lib/theme";
@@ -68,6 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           children
         )}
       </main>
+      {user.role === "admin" && !user.mustChangePassword && <ChatBuddy name={user.name} />}
     </div>
   );
 }
