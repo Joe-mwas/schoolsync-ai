@@ -63,6 +63,9 @@ p { margin: 0 0 0.75rem; }
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
+  /* Above the page, so the notification panel opens over the dashboard cards. */
+  position: relative;
+  z-index: 60;
 }
 .sidebar-inner {
   padding: 1.25rem 1rem;
