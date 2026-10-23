@@ -100,3 +100,23 @@ test("older data gets sign-in security defaults and an empty activity log", () =
   migrateDatabase(db as Database, {});
   assert.deepEqual(db.security, { requireTwoStep: true, idleMinutes: 30 }, "an odd idle time falls back to 30 minutes");
 });
+
+test("an emergency reset from the hosting settings lets a locked-out administrator back in, once", async () => {
+  const { applyAdminReset } = await import("../src/lib/migrate.ts");
+  const { verifyPassword } = await import("../src/lib/password.ts");
+  const db = seedDatabase();
+  const admin = db.users.find((u) => u.role === "admin")!;
+  admin.twoStep = { secret: newSecret(), enabledAt: new Date().toISOString(), backupCodes: [] };
+  const env = { ADMIN_EMAIL: "Admin@SchoolSync.test", ADMIN_RESET_PASSWORD: "Rescue-Me-2026" };
+  assert.equal(applyAdminReset(db, {}), false, "nothing without the setting");
+  assert.equal(applyAdminReset(db, { ADMIN_RESET_PASSWORD: "short" }), false);
+  assert.equal(applyAdminReset(db, env), true);
+  assert.ok(verifyPassword("Rescue-Me-2026", admin.passwordHash));
+  assert.equal(admin.mustChangePassword, true);
+  assert.equal(admin.twoStep, null);
+  assert.equal(db.activity.at(-1)!.action, "Emergency password reset");
+  setPassword(admin, "My-New-Passw0rd!", { mustChange: false });
+  assert.equal(applyAdminReset(db, env), false, "the same value isn't applied again on restart");
+  assert.ok(verifyPassword("My-New-Passw0rd!", admin.passwordHash));
+  assert.equal(applyAdminReset(db, { ...env, ADMIN_EMAIL: "nobody@x.test" }), true, "a new value works; with one administrator, the email can be off");
+});
