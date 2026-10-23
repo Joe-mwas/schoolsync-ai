@@ -67,15 +67,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           )}
           <Nav items={items} />
+          <div className="menu-tools">
+            <ThemeToggle initial={theme} inMenu />
+            <MenuToggle initial={compact} />
+          </div>
           <div className="user-card">
             <span className="avatar" aria-hidden="true">{user.name.trim().charAt(0).toUpperCase()}</span>
             <div className="user-text">
               <strong>{user.name}</strong>
               {ROLE_LABELS[user.role]} · <SignOutButton />
-              <div style={{ marginTop: 8 }}><ThemeToggle initial={theme} /></div>
             </div>
           </div>
-          <MenuToggle initial={compact} />
         </div>
       </aside>
       <main className="main">

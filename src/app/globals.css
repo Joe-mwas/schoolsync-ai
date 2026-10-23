@@ -746,6 +746,23 @@ button.danger-solid:disabled { opacity: 0.5; }
 .user-card { display: flex; gap: 10px; align-items: flex-start; padding: 0 0.25rem; }
 .avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 .menu-toggle { display: flex; align-items: center; gap: 8px; justify-content: flex-start; padding: 0.45rem 0.65rem; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; box-shadow: none; font-size: 0.8rem; font-weight: 500; }
+.menu-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+/* line the icons and labels up with the menu links above (the buttons' 1px border included), and the avatar under them */
+.menu-tools .menu-toggle { padding-left: calc(0.65rem - 1px); gap: 10px; font-size: 0.85rem; }
+.sidebar .user-card { padding-left: 0.65rem; }
+.shell.is-compact .sidebar .user-card { padding-left: 0; }
+
+/* Coloured icon tiles: each icon in its own colour on a soft tint of it; the current page's tile is solid with a glow. */
+.ic-tile { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--ic);
+  background: color-mix(in srgb, var(--ic) 17%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ic) 22%, transparent);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s var(--ease-out, ease); }
+.ic-tile .icon { opacity: 1 !important; }
+a:hover > .ic-tile, button:hover > .ic-tile { transform: scale(1.08); background: color-mix(in srgb, var(--ic) 26%, transparent); }
+.active > .ic-tile { color: #fff; background: linear-gradient(145deg, color-mix(in srgb, var(--ic) 85%, #fff), var(--ic));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ic) 45%, transparent); }
+.tabbar .ic-tile { width: 32px; height: 28px; }
+.tabbar a.active, .tabbar button.active { background: transparent !important; }
+@media (prefers-reduced-motion: reduce) { .ic-tile { transition: none; } }
 .menu-toggle:hover:not(:disabled) { color: var(--text); background: var(--surface-2); transform: none; box-shadow: none; }
 .shell.is-compact .nav-label, .shell.is-compact .nav-heading, .shell.is-compact .brand-name,
 .shell.is-compact .school-badge span, .shell.is-compact .user-text { display: none; }
@@ -763,7 +780,7 @@ button.danger-solid:disabled { opacity: 0.5; }
   .shell, .shell.is-compact { grid-template-columns: 1fr; }
   .sidebar { padding: 10px 12px 0; }
   .sidebar-inner { position: static; height: auto; flex-direction: row; align-items: center; padding: 0.6rem 0.85rem; border-radius: 16px; }
-  .sidebar .nav, .sidebar .user-card, .sidebar .menu-toggle, .sidebar .school-badge { display: none; }
+  .sidebar .nav, .sidebar .user-card, .sidebar .menu-tools, .sidebar .school-badge { display: none; }
   .shell.is-compact .brand { flex-direction: row; }
   .shell.is-compact .brand-name { display: inline; }
   .brand { flex: 1; }

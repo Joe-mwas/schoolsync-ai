@@ -20,16 +20,35 @@ const PATHS = {
   settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15.1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2V5a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 20.9 11H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
   user: "M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM4 21v-1a7 7 0 0 1 14 0v1",
   more: "M5 12h.01M12 12h.01M19 12h.01",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1.5v2M12 20.5v2M4.6 4.6 6 6M18 18l1.4 1.4M1.5 12h2M20.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4",
+  moon: "M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z",
   chevronLeft: "M15 18l-6-6 6-6",
   chevronRight: "M9 18l6-6-6-6",
 } as const;
 
 export type IconName = keyof typeof PATHS;
 
+/** Each icon's own colour, for the coloured tiles in the menu. Bright enough to read on the navy or dark menu. */
+const COLOURS: Record<IconName, string> = {
+  home: "#5b8cff", pin: "#ff7a59", megaphone: "#f5a524", sparkles: "#b57bff", book: "#38bdf8", chart: "#22c55e",
+  wallet: "#10b981", info: "#60a5fa", calendar: "#f43f5e", clipboard: "#f59e0b", image: "#ec4899", chat: "#25d366",
+  users: "#818cf8", bot: "#a78bfa", check: "#34d399", activity: "#fb7185", settings: "#94a3b8", user: "#2dd4bf",
+  more: "#94a3b8", sun: "#fbbf24", moon: "#a5b4fc", chevronLeft: "#94a3b8", chevronRight: "#94a3b8",
+};
+
 export default function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
     <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name === "more" ? 3 : 1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={PATHS[name]} />
     </svg>
+  );
+}
+
+/** The icon on a softly tinted rounded tile in its own colour (solid when the item is the current page; see .ic-tile). */
+export function IconTile({ name, size = 17 }: { name: IconName; size?: number }) {
+  return (
+    <span className="ic-tile" style={{ "--ic": COLOURS[name] } as React.CSSProperties}>
+      <Icon name={name} size={size} />
+    </span>
   );
 }

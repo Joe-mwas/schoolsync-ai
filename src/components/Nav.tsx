@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Icon, { type IconName } from "./Icon";
+import { IconTile, type IconName } from "./Icon";
 
 export type NavGroup = "everyday" | "school" | "admin" | "you";
 
@@ -32,7 +32,7 @@ export default function Nav({ items }: { items: NavItem[] }) {
           {GROUP_TITLES[g] && <div className="nav-heading">{GROUP_TITLES[g]}</div>}
           {list.map((item) => (
             <Link key={item.href + item.label} href={item.href} className={isActive(pathname, item.href) ? "active" : undefined} title={item.label}>
-              <Icon name={item.icon} />
+              <IconTile name={item.icon} />
               <span className="nav-label">{item.label}</span>
             </Link>
           ))}
@@ -53,7 +53,7 @@ export function MenuToggle({ initial }: { initial: boolean }) {
   }
   return (
     <button type="button" className="menu-toggle" onClick={toggle} aria-label={compact ? "Widen the menu" : "Shrink the menu to icons"} title={compact ? "Widen the menu" : "Shrink the menu"}>
-      <Icon name={compact ? "chevronRight" : "chevronLeft"} size={18} />
+      <IconTile name={compact ? "chevronRight" : "chevronLeft"} />
       <span className="nav-label">Shrink menu</span>
     </button>
   );
@@ -91,12 +91,12 @@ export function MobileBar({ items, main, footer }: { items: NavItem[]; main: str
       <nav className="tabbar" aria-label="Main">
         {quick.map((i) => (
           <Link key={i.href} href={i.href} className={isActive(pathname, i.href) ? "active" : undefined}>
-            <Icon name={i.icon} size={22} />
+            <IconTile name={i.icon} size={19} />
             <span>{SHORT[i.label] ?? i.label}</span>
           </Link>
         ))}
         <button type="button" className={`tab-more${open || moreActive ? " active" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}>
-          <Icon name="more" size={22} />
+          <IconTile name="more" size={19} />
           <span>More</span>
         </button>
       </nav>
