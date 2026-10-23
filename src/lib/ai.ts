@@ -9,7 +9,7 @@ import { feeStatement, formatFeeStatement, formatMoney, schoolFees } from "./fee
 import { ROLE_LABELS, userClassIds, visibleAnnouncements } from "./permissions.ts";
 import { examPerformance, examsFor, formatReport, studentReport } from "./results.ts";
 import { isLeader, isSchoolWide } from "./types.ts";
-import type { Database, Insights, User } from "./types.ts";
+import type { Database, FamilyModel, Insights, User } from "./types.ts";
 
 export const MODEL = "claude-opus-5-5";
 // Server-side fallback: if a request is declined by a safety classifier, the
@@ -129,17 +129,38 @@ function systemBlocks(context: string, user: User, db: Database, pictures = fals
   ];
 }
 
+/**
+ * Parents and learners ask simple, frequent questions (balances, dates,
+ * uniform), so a smaller model answers them at a fraction of the cost; the
+ * school picks which on the Setup page. Staff always get the top model.
+ */
+export const FAMILY_MODELS: Record<FamilyModel, { model: string; label: string }> = {
+  economy: { model: "claude-haiku-5-5", label: "Economy (Claude Haiku 5.5)" },
+  balanced: { model: "claude-sonnet-5-5", label: "Balanced (Claude Sonnet 5.5)" },
+  top: { model: MODEL, label: "Top (Claude Opus 5.5)" },
+};
+
+export function modelFor(user: Pick<User, "role">, db: Pick<Database, "aiSettings">): string {
+  if (user.role !== "parent" && user.role !== "student") return MODEL;
+  return FAMILY_MODELS[db.aiSettings?.familyModel ?? "economy"]?.model ?? FAMILY_MODELS.economy.model;
+}
+
+/** The server-side fallback (another model answers if one declines) exists for Opus and Sonnet, not Haiku. */
+function fallbackFor(model: string): { betas: string[]; fallbacks: "default" } | Record<string, never> {
+  return model.startsWith("claude-haiku") ? {} : { betas: [FALLBACK_BETA], fallbacks: "default" };
+}
+
 /** Stream an assistant reply as plain text chunks. */
 export async function* streamAssistantReply(
   user: User,
   db: Database,
   messages: Anthropic.Beta.BetaMessageParam[],
 ): AsyncGenerator<string> {
+  const model = modelFor(user, db);
   const stream = getClient().beta.messages.stream({
-    model: MODEL,
+    model,
     max_tokens: 64000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
+    ...fallbackFor(model),
     output_config: { effort: "low" },
     system: systemBlocks(buildSchoolContext(user, db), user, db),
     messages,
@@ -159,11 +180,11 @@ export async function* streamAssistantReply(
 
 /** One-shot reply, used for WhatsApp auto-responses. */
 export async function generateReply(user: User, db: Database, text: string): Promise<string> {
+  const model = modelFor(user, db);
   const response = await getClient().beta.messages.create({
-    model: MODEL,
+    model,
     max_tokens: 16000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
+    ...fallbackFor(model),
     output_config: { effort: "low" },
     system: systemBlocks(
       `${buildSchoolContext(user, db)}\n\nThis conversation is happening over WhatsApp: reply in plain text (no Markdown), under 120 words. Some school facts have a picture, shown as [[picture:id]]. When the person asks to see something, or the picture clearly helps, put that marker on its own line at the end and the picture will be sent with your reply; never mention the marker itself.`,

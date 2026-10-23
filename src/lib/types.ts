@@ -254,6 +254,14 @@ export interface Database {
   documents: SchoolDocument[];
   /** The latest AI insights for each dashboard view, reused until the figures change. */
   insights: Partial<Record<InsightScope, SavedInsights>>;
+  aiSettings: AiSettings;
+}
+
+/** Which Claude model answers parents and learners (staff always get the top model). */
+export type FamilyModel = "economy" | "balanced" | "top";
+
+export interface AiSettings {
+  familyModel: FamilyModel;
 }
 
 /** Which figures a dashboard shows: all (director, administrator), performance (headteacher), money (secretary). */

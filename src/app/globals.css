@@ -502,3 +502,11 @@ h2 { letter-spacing: -0.01em; }
 .insights .bone { background: var(--border); border-radius: 6px; animation: breathe 1.2s ease-in-out infinite; }
 @media (max-width: 860px) { .insights-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .insights .bone { animation: none; } }
+
+/* Setup: which AI answers parents and learners. */
+.model-picker { border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.model-picker legend { padding: 0 0.35rem; }
+.model-option { flex-direction: row; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-weight: 400; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.model-option > span { display: flex; flex-direction: column; gap: 2px; }
+.model-option input { width: auto; margin-top: 3px; accent-color: var(--primary); }
+.model-option.is-on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--glow-soft); }

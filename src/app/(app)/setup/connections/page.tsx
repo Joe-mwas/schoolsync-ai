@@ -1,14 +1,14 @@
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { listSnapshots } from "@/lib/backup";
-import { backupDirectory } from "@/lib/db";
+import { backupDirectory, readDb } from "@/lib/db";
 import { callbackUrls, mpesaReceiving } from "@/lib/daraja";
 import { displayOrigin } from "@/lib/publicUrl";
 import { countReady, setupChecklist, type ItemStatus, type SetupSection } from "@/lib/setupStatus";
 import { webhookActivity } from "@/lib/webhookActivity";
 import { encryptionConfigured } from "@/lib/dataCrypto";
 import { offsiteConfig, readOffsiteStatus } from "@/lib/offsite";
-import { CopyButton, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
+import { CopyButton, FamilyModelPicker, GenerateKey, OffsiteBackupButton, TestButton } from "../SetupTools";
 import SetupTabs from "../SetupTabs";
 
 const PILL: Record<ItemStatus, { label: string; className: string }> = {
@@ -120,6 +120,7 @@ export default async function ConnectionsPage() {
         <p className="small muted">Powers the AI Assistant, &quot;Draft with AI&quot; on announcements, and automatic WhatsApp replies.</p>
         <Checklist section={ai} />
         <TestButton kind="ai" label="Test AI" />
+        <FamilyModelPicker initial={(await readDb()).aiSettings.familyModel} />
       </div>
 
       <div className="card stack">

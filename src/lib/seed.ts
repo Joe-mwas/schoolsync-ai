@@ -42,6 +42,7 @@ export function seedProductionDatabase(admin: { name: string; email: string; pas
     profile: emptyProfile(),
     documents: [],
     insights: {},
+    aiSettings: { familyModel: "economy" },
   };
 }
 
@@ -207,6 +208,7 @@ export function seedDatabase(): Database {
     profile: emptyProfile(),
     documents: [],
     insights: {},
+    aiSettings: { familyModel: "economy" },
   };
 }
 
