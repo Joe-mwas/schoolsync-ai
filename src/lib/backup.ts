@@ -11,7 +11,7 @@ import { ROLES, type Database } from "./types.ts";
  * delete); downloading them protects against losing the disk itself.
  */
 
-export type SnapshotReason = "daily" | "manual" | "before-import" | "before-restore";
+export type SnapshotReason = "daily" | "manual" | "before-import" | "before-restore" | "before-erase";
 
 export interface Snapshot {
   name: string;
@@ -23,7 +23,7 @@ export interface Snapshot {
 export const KEEP_DAILY = 14;
 export const KEEP_OTHER = 20;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const NAME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z_(daily|manual|before-import|before-restore)\.json\.gz$/;
+const NAME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z_(daily|manual|before-import|before-restore|before-erase)\.json\.gz$/;
 
 export function backupDir(dataFile: string): string {
   return path.join(path.dirname(dataFile), "backups");

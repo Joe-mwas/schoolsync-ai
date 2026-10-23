@@ -611,3 +611,7 @@ label.check-row input { width: auto; margin-top: 4px; flex: none; }
 :root:not([data-theme="dark"]) .sidebar .nav a.active { background: rgba(157, 176, 255, 0.12); }
 .erase-log { max-width: 420px; gap: 10px; border-color: var(--danger); }
 .page-header:has(.erase-log) { flex-wrap: wrap; }
+.danger-zone { border: 1px solid var(--danger); }
+.erase-all-form { max-width: 460px; gap: 12px; }
+button.danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+button.danger-solid:disabled { opacity: 0.5; }

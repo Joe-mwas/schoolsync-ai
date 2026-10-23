@@ -9,6 +9,7 @@ const REASONS: Record<Snapshot["reason"], string> = {
   manual: "Manual",
   "before-import": "Before import",
   "before-restore": "Before restore",
+  "before-erase": "Before erase",
 };
 
 function formatSize(bytes: number) {
